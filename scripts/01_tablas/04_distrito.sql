@@ -1,19 +1,19 @@
-USE FacturacionSolucionesMagnificas;
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
 GO
 
-CREATE TABLE Distrito (
-    id_distrito INT IDENTITY(1,1) NOT NULL,
-    id_canton INT NOT NULL,
-    nombre VARCHAR(50) NOT NULL,
+CREATE TABLE DISTRITO (
+    ID_DISTRITO INT IDENTITY (1, 1) NOT NULL,
+    ID_CANTON INT NOT NULL,
+    NOMBRE VARCHAR(50) NOT NULL,
 
-    CONSTRAINT PK_Distrito
-        PRIMARY KEY (id_distrito),
+    CONSTRAINT PK_DISTRITO
+        PRIMARY KEY (ID_DISTRITO),
 
-    CONSTRAINT FK_Distrito_Canton
-        FOREIGN KEY (id_canton)
-        REFERENCES Canton(id_canton),
+    CONSTRAINT FK_DISTRITO_CANTON
+        FOREIGN KEY (ID_CANTON)
+        REFERENCES CANTON (ID_CANTON),
 
-    CONSTRAINT UQ_Distrito_Canton_Nombre
-        UNIQUE (id_canton, nombre)
+    CONSTRAINT UQ_DISTRITO_CANTON_NOMBRE
+        UNIQUE (ID_CANTON, NOMBRE)
 );
 GO

@@ -1,19 +1,19 @@
-USE FacturacionSolucionesMagnificas;
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
 GO
 
-CREATE TABLE Canton (
-    id_canton INT IDENTITY(1,1) NOT NULL,
-    id_provincia INT NOT NULL,
-    nombre VARCHAR(50) NOT NULL,
+CREATE TABLE CANTON (
+    ID_CANTON INT IDENTITY (1, 1) NOT NULL,
+    ID_PROVINCIA INT NOT NULL,
+    NOMBRE VARCHAR(50) NOT NULL,
 
-    CONSTRAINT PK_Canton
-        PRIMARY KEY (id_canton),
+    CONSTRAINT PK_CANTON
+        PRIMARY KEY (ID_CANTON),
 
-    CONSTRAINT FK_Canton_Provincia
-        FOREIGN KEY (id_provincia)
-        REFERENCES Provincia(id_provincia),
+    CONSTRAINT FK_CANTON_PROVINCIA
+        FOREIGN KEY (ID_PROVINCIA)
+        REFERENCES PROVINCIA (ID_PROVINCIA),
 
-    CONSTRAINT UQ_Canton_Provincia_Nombre
-        UNIQUE (id_provincia, nombre)
+    CONSTRAINT UQ_CANTON_PROVINCIA_NOMBRE
+        UNIQUE (ID_PROVINCIA, NOMBRE)
 );
 GO
