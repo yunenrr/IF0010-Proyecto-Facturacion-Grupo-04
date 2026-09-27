@@ -25,12 +25,16 @@ CREATE TABLE CLIENTE (
 
     CONSTRAINT CK_CLIENTE_TIPO
     CHECK (
-        (TIPO_CLIENTE = 'FISICA'
+        (
+            TIPO_CLIENTE = 'FISICA'
             AND NOMBRE IS NOT NULL
-            AND RAZON_SOCIAL IS NULL)
-        OR
-        (TIPO_CLIENTE = 'JURIDICA'
-            AND RAZON_SOCIAL IS NOT NULL)
+            AND RAZON_SOCIAL IS NULL
+        )
+        OR (
+            TIPO_CLIENTE = 'JURIDICA'
+            AND NOMBRE IS NULL
+            AND RAZON_SOCIAL IS NOT NULL
+        )
     )
 );
 GO

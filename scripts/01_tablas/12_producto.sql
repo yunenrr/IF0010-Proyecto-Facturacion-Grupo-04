@@ -25,12 +25,15 @@ CREATE TABLE PRODUCTO (
 
     CONSTRAINT CK_PRODUCTO_EXISTENCIA
     CHECK (
-        (TIPO_PRODUCTO = 'FISICO'
+        (
+            TIPO_PRODUCTO = 'FISICO'
             AND EXISTENCIA IS NOT NULL
-            AND EXISTENCIA >= 0)
-        OR
-        (TIPO_PRODUCTO = 'DIGITAL'
-            AND EXISTENCIA IS NULL)
+            AND EXISTENCIA >= 0
+        )
+        OR (
+            TIPO_PRODUCTO = 'DIGITAL'
+            AND EXISTENCIA IS NULL
+        )
     ),
 
     CONSTRAINT CK_PRODUCTO_PRECIO_UNITARIO
