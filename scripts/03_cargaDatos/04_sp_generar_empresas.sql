@@ -3,16 +3,16 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM sys.objects
-    WHERE name = 'SP_GENERAR_EMPRESAS'
-      AND type = 'P'
+    FROM SYS.OBJECTS
+    WHERE NAME = 'SP_GENERAR_EMPRESAS'
+      AND TYPE = 'P'
 )
 BEGIN
-    DROP PROCEDURE dbo.SP_GENERAR_EMPRESAS;
+    DROP PROCEDURE DBO.SP_GENERAR_EMPRESAS;
 END
 GO
 
-CREATE PROCEDURE dbo.SP_GENERAR_EMPRESAS
+CREATE PROCEDURE DBO.SP_GENERAR_EMPRESAS
     @TOTAL_OBJETIVO INT = 100
 AS
 BEGIN
@@ -25,7 +25,7 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.DIRECCION
+            FROM DBO.DIRECCION
         )
             THROW 51202, 'Primero se deben generar direcciones.', 1;
 
@@ -44,10 +44,10 @@ BEGIN
         DECLARE @CORREO VARCHAR(100);
 
         SELECT @ACTUAL = COUNT_BIG(*)
-        FROM dbo.EMPRESA;
+        FROM DBO.EMPRESA;
 
         SELECT @CANTIDAD_DIRECCIONES = COUNT(*)
-        FROM dbo.DIRECCION;
+        FROM DBO.DIRECCION;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
         BEGIN
@@ -58,20 +58,21 @@ BEGIN
 
             IF NOT EXISTS (
                 SELECT 1
-                FROM dbo.EMPRESA
+                FROM DBO.EMPRESA
                 WHERE CEDULA = @CEDULA
             )
             BEGIN
                 SET @POSICION = CONVERT(INT, @ACTUAL % @CANTIDAD_DIRECCIONES);
 
-                SELECT @ID_DIRECCION = D.ID_DIRECCION
-                FROM dbo.DIRECCION AS D
-                ORDER BY D.ID_DIRECCION
+                SELECT @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                FROM DBO.DIRECCION AS DIRECCION
+                ORDER BY DIRECCION.ID_DIRECCION
                 OFFSET @POSICION ROWS
                 FETCH NEXT 1 ROWS ONLY;
 
                 SET @NOMBRE = CONCAT('Empresa de prueba ', @CONTADOR);
                 SET @RAZON = CONCAT('Empresa de prueba ', @CONTADOR, ' S.A.');
+
                 SET @TELEFONO = CONCAT(
                     '2',
                     RIGHT(
@@ -79,9 +80,10 @@ BEGIN
                         7
                     )
                 );
+
                 SET @CORREO = CONCAT('empresa', @CONTADOR, '@correo.com');
 
-                EXEC dbo.SP_CREAR_EMPRESA
+                EXEC DBO.SP_CREAR_EMPRESA
                     @CEDULA = @CEDULA,
                     @NOMBRE_COMERCIAL = @NOMBRE,
                     @RAZON_SOCIAL = @RAZON,
@@ -107,8 +109,8 @@ BEGIN
 END;
 GO
 
-EXEC dbo.SP_GENERAR_EMPRESAS @TOTAL_OBJETIVO = 100;
+EXEC DBO.SP_GENERAR_EMPRESAS @TOTAL_OBJETIVO = 100;
 GO
 
-DROP PROCEDURE dbo.SP_GENERAR_EMPRESAS;
+DROP PROCEDURE DBO.SP_GENERAR_EMPRESAS;
 GO
