@@ -3,16 +3,16 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM sys.objects
-    WHERE name = 'SP_CREAR_PRODUCTO'
-      AND type = 'P'
+    FROM SYS.OBJECTS
+    WHERE NAME = 'SP_CREAR_PRODUCTO'
+      AND TYPE = 'P'
 )
 BEGIN
-    DROP PROCEDURE dbo.SP_CREAR_PRODUCTO;
+    DROP PROCEDURE DBO.SP_CREAR_PRODUCTO;
 END
 GO
 
-CREATE PROCEDURE dbo.SP_CREAR_PRODUCTO
+CREATE PROCEDURE DBO.SP_CREAR_PRODUCTO
     @CODIGO VARCHAR(30),
     @DESCRIPCION VARCHAR(200),
     @TIPO_PRODUCTO VARCHAR(10),
@@ -41,7 +41,7 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.TIPOPRODUCTO
+            FROM DBO.TIPOPRODUCTO
             WHERE CODIGO = @TIPO_PRODUCTO
         )
             THROW 51304, 'El tipo de producto no existe.', 1;
@@ -64,14 +64,14 @@ BEGIN
 
         IF EXISTS (
             SELECT 1
-            FROM dbo.PRODUCTO
+            FROM DBO.PRODUCTO
             WHERE CODIGO = @CODIGO
         )
             THROW 51310, 'Ya existe un producto con ese codigo.', 1;
 
         BEGIN TRANSACTION;
 
-        INSERT INTO dbo.PRODUCTO (
+        INSERT INTO DBO.PRODUCTO (
             CODIGO,
             DESCRIPCION,
             TIPO_PRODUCTO,
