@@ -3,16 +3,16 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM sys.objects
-    WHERE name = 'SP_GENERAR_PRODUCTOS'
-      AND type = 'P'
+    FROM SYS.OBJECTS
+    WHERE NAME = 'SP_GENERAR_PRODUCTOS'
+      AND TYPE = 'P'
 )
 BEGIN
-    DROP PROCEDURE dbo.SP_GENERAR_PRODUCTOS;
+    DROP PROCEDURE DBO.SP_GENERAR_PRODUCTOS;
 END
 GO
 
-CREATE PROCEDURE dbo.SP_GENERAR_PRODUCTOS
+CREATE PROCEDURE DBO.SP_GENERAR_PRODUCTOS
     @TOTAL_OBJETIVO INT = 1000
 AS
 BEGIN
@@ -25,12 +25,12 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.TIPOPRODUCTO
+            FROM DBO.TIPOPRODUCTO
             WHERE CODIGO = 'FISICO'
         )
         OR NOT EXISTS (
             SELECT 1
-            FROM dbo.TIPOPRODUCTO
+            FROM DBO.TIPOPRODUCTO
             WHERE CODIGO = 'DIGITAL'
         )
             THROW 51402, 'Primero se deben cargar los tipos de producto.', 1;
@@ -48,7 +48,7 @@ BEGIN
         DECLARE @IMPUESTO DECIMAL(5, 2);
 
         SELECT @ACTUAL = COUNT_BIG(*)
-        FROM dbo.PRODUCTO;
+        FROM DBO.PRODUCTO;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
         BEGIN
@@ -56,7 +56,7 @@ BEGIN
 
             IF NOT EXISTS (
                 SELECT 1
-                FROM dbo.PRODUCTO
+                FROM DBO.PRODUCTO
                 WHERE CODIGO = @CODIGO
             )
             BEGIN
@@ -84,7 +84,7 @@ BEGIN
                     ELSE 13
                 END;
 
-                EXEC dbo.SP_CREAR_PRODUCTO
+                EXEC DBO.SP_CREAR_PRODUCTO
                     @CODIGO = @CODIGO,
                     @DESCRIPCION = @DESCRIPCION,
                     @TIPO_PRODUCTO = @TIPO,
@@ -110,8 +110,8 @@ BEGIN
 END;
 GO
 
-EXEC dbo.SP_GENERAR_PRODUCTOS @TOTAL_OBJETIVO = 1000;
+EXEC DBO.SP_GENERAR_PRODUCTOS @TOTAL_OBJETIVO = 1000;
 GO
 
-DROP PROCEDURE dbo.SP_GENERAR_PRODUCTOS;
+DROP PROCEDURE DBO.SP_GENERAR_PRODUCTOS;
 GO
