@@ -37,14 +37,14 @@ BEGIN
                 WHERE CODIGO = 'JURIDICA'
             )
         )
-            THROW 50021, 'Primero se deben cargar los tipos de cliente.', 1;
+            THROW 50021, 'Primero cargue los tipos de cliente.', 1;
 
         IF
             NOT EXISTS (
                 SELECT 1
                 FROM DBO.DIRECCION
             )
-            THROW 50022, 'Primero se deben generar direcciones.', 1;
+            THROW 50022, 'Primero genere las direcciones.', 1;
 
         BEGIN TRANSACTION;
 
@@ -52,7 +52,6 @@ BEGIN
         DECLARE @CONTADOR INT = 1;
         DECLARE @CANTIDAD_DIRECCIONES INT;
         DECLARE @POSICION INT;
-
         DECLARE @CEDULA VARCHAR(20);
         DECLARE @TIPO_CLIENTE VARCHAR(10);
         DECLARE @NOMBRE VARCHAR(150);
@@ -71,7 +70,11 @@ BEGIN
         BEGIN
             SET @CEDULA = CONCAT(
                 'CLI',
-                RIGHT('00000000' + CONVERT(VARCHAR(8), @CONTADOR), 8)
+                RIGHT(
+                    '00000000'
+                    + CONVERT(VARCHAR(8), @CONTADOR),
+                    8
+                )
             );
 
             IF
@@ -80,54 +83,73 @@ BEGIN
                     FROM DBO.CLIENTE
                     WHERE CEDULA = @CEDULA
                 )
-            BEGIN
-                SET @POSICION =
-                    CONVERT(INT, @ACTUAL % @CANTIDAD_DIRECCIONES);
-
-                SELECT @ID_DIRECCION = DIRECCION.ID_DIRECCION
-                FROM DBO.DIRECCION AS DIRECCION
-                ORDER BY DIRECCION.ID_DIRECCION
-                OFFSET @POSICION ROWS
-                FETCH NEXT 1 ROWS ONLY;
-
-                IF @CONTADOR % 2 = 0
                 BEGIN
-                    SET @TIPO_CLIENTE = 'FISICA';
-                    SET @NOMBRE = CONCAT('Cliente Fisico ', @CONTADOR);
-                    SET @RAZON_SOCIAL = 'NO APLICA';
+                    SET @POSICION = CONVERT(
+                        INT,
+                        @ACTUAL % @CANTIDAD_DIRECCIONES
+                    );
+
+                    SELECT
+                        @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                    FROM DBO.DIRECCION AS DIRECCION
+                    ORDER BY DIRECCION.ID_DIRECCION
+                    OFFSET @POSICION ROWS
+                    FETCH NEXT 1 ROWS ONLY;
+
+                    IF @CONTADOR % 2 = 0
+                        SET @TIPO_CLIENTE = 'FISICA';
+
+                    IF @CONTADOR % 2 = 0
+                        SET @NOMBRE = CONCAT(
+                            'Cliente Fisico ',
+                            @CONTADOR
+                        );
+
+                    IF @CONTADOR % 2 = 0
+                        SET @RAZON_SOCIAL = 'NO APLICA';
+
+                    IF @CONTADOR % 2 <> 0
+                        SET @TIPO_CLIENTE = 'JURIDICA';
+
+                    IF @CONTADOR % 2 <> 0
+                        SET @NOMBRE = 'NO APLICA';
+
+                    IF @CONTADOR % 2 <> 0
+                        SET @RAZON_SOCIAL = CONCAT(
+                            'Empresa Cliente ',
+                            @CONTADOR,
+                            ' S.A.'
+                        );
+
+                    SET @TELEFONO = CONCAT(
+                        '8',
+                        RIGHT(
+                            '0000000'
+                            + CONVERT(
+                                VARCHAR(7),
+                                @CONTADOR % 10000000
+                            ),
+                            7
+                        )
+                    );
+
+                    SET @CORREO = CONCAT(
+                        'cliente',
+                        @CONTADOR,
+                        '@correo.com'
+                    );
+
+                    EXEC DBO.PR_CREAR_CLIENTE
+                        @CEDULA = @CEDULA,
+                        @TIPO_CLIENTE = @TIPO_CLIENTE,
+                        @NOMBRE = @NOMBRE,
+                        @RAZON_SOCIAL = @RAZON_SOCIAL,
+                        @ID_DIRECCION = @ID_DIRECCION,
+                        @TELEFONO = @TELEFONO,
+                        @CORREO = @CORREO;
+
+                    SET @ACTUAL = @ACTUAL + 1;
                 END;
-                ELSE
-                BEGIN
-                    SET @TIPO_CLIENTE = 'JURIDICA';
-                    SET @NOMBRE = 'NO APLICA';
-
-                    SET @RAZON_SOCIAL =
-                        CONCAT('Empresa Cliente ', @CONTADOR, ' S.A.');
-                END;
-
-                SET @TELEFONO = CONCAT(
-                    '8',
-                    RIGHT(
-                        '0000000'
-                        + CONVERT(VARCHAR(7), @CONTADOR % 10000000),
-                        7
-                    )
-                );
-
-                SET @CORREO =
-                    CONCAT('cliente', @CONTADOR, '@correo.com');
-
-                EXEC DBO.PR_CREAR_CLIENTE
-                    @CEDULA = @CEDULA,
-                    @TIPO_CLIENTE = @TIPO_CLIENTE,
-                    @NOMBRE = @NOMBRE,
-                    @RAZON_SOCIAL = @RAZON_SOCIAL,
-                    @ID_DIRECCION = @ID_DIRECCION,
-                    @TELEFONO = @TELEFONO,
-                    @CORREO = @CORREO;
-
-                SET @ACTUAL = @ACTUAL + 1;
-            END;
 
             SET @CONTADOR = @CONTADOR + 1;
         END;
@@ -143,7 +165,8 @@ BEGIN
 END;
 GO
 
-EXEC DBO.PR_GENERAR_CLIENTES @TOTAL_OBJETIVO = 50000;
+EXEC DBO.PR_GENERAR_CLIENTES
+    @TOTAL_OBJETIVO = 50000;
 GO
 
 DROP PROCEDURE DBO.PR_GENERAR_CLIENTES;
