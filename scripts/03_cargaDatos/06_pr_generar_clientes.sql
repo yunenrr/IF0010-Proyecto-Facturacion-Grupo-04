@@ -67,92 +67,92 @@ BEGIN
         FROM DBO.DIRECCION;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
-        BEGIN
-            SET @CEDULA = CONCAT(
-                'CLI',
-                RIGHT(
-                    '00000000'
-                    + CONVERT(VARCHAR(8), @CONTADOR),
-                    8
-                )
-            );
+            BEGIN
+                SET @CEDULA = CONCAT(
+                    'CLI',
+                    RIGHT(
+                        '00000000'
+                        + CONVERT(VARCHAR(8), @CONTADOR),
+                        8
+                    )
+                );
 
-            IF
-                NOT EXISTS (
-                    SELECT 1
-                    FROM DBO.CLIENTE
-                    WHERE CEDULA = @CEDULA
-                )
-                BEGIN
-                    SET @POSICION = CONVERT(
-                        INT,
-                        @ACTUAL % @CANTIDAD_DIRECCIONES
-                    );
-
-                    SELECT
-                        @ID_DIRECCION = DIRECCION.ID_DIRECCION
-                    FROM DBO.DIRECCION AS DIRECCION
-                    ORDER BY DIRECCION.ID_DIRECCION
-                    OFFSET @POSICION ROWS
-                    FETCH NEXT 1 ROWS ONLY;
-
-                    IF @CONTADOR % 2 = 0
-                        SET @TIPO_CLIENTE = 'FISICA';
-
-                    IF @CONTADOR % 2 = 0
-                        SET @NOMBRE = CONCAT(
-                            'Cliente Fisico ',
-                            @CONTADOR
+                IF
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM DBO.CLIENTE
+                        WHERE CEDULA = @CEDULA
+                    )
+                    BEGIN
+                        SET @POSICION = CONVERT(
+                            INT,
+                            @ACTUAL % @CANTIDAD_DIRECCIONES
                         );
 
-                    IF @CONTADOR % 2 = 0
-                        SET @RAZON_SOCIAL = 'NO APLICA';
+                        SELECT
+                            @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                        FROM DBO.DIRECCION AS DIRECCION
+                        ORDER BY DIRECCION.ID_DIRECCION
+                        OFFSET @POSICION ROWS
+                        FETCH NEXT 1 ROWS ONLY;
 
-                    IF @CONTADOR % 2 <> 0
-                        SET @TIPO_CLIENTE = 'JURIDICA';
+                        IF @CONTADOR % 2 = 0
+                            SET @TIPO_CLIENTE = 'FISICA';
 
-                    IF @CONTADOR % 2 <> 0
-                        SET @NOMBRE = 'NO APLICA';
+                        IF @CONTADOR % 2 = 0
+                            SET @NOMBRE = CONCAT(
+                                'Cliente Fisico ',
+                                @CONTADOR
+                            );
 
-                    IF @CONTADOR % 2 <> 0
-                        SET @RAZON_SOCIAL = CONCAT(
-                            'Empresa Cliente ',
+                        IF @CONTADOR % 2 = 0
+                            SET @RAZON_SOCIAL = 'NO APLICA';
+
+                        IF @CONTADOR % 2 <> 0
+                            SET @TIPO_CLIENTE = 'JURIDICA';
+
+                        IF @CONTADOR % 2 <> 0
+                            SET @NOMBRE = 'NO APLICA';
+
+                        IF @CONTADOR % 2 <> 0
+                            SET @RAZON_SOCIAL = CONCAT(
+                                'Empresa Cliente ',
+                                @CONTADOR,
+                                ' S.A.'
+                            );
+
+                        SET @TELEFONO = CONCAT(
+                            '8',
+                            RIGHT(
+                                '0000000'
+                                + CONVERT(
+                                    VARCHAR(7),
+                                    @CONTADOR % 10000000
+                                ),
+                                7
+                            )
+                        );
+
+                        SET @CORREO = CONCAT(
+                            'cliente',
                             @CONTADOR,
-                            ' S.A.'
+                            '@correo.com'
                         );
 
-                    SET @TELEFONO = CONCAT(
-                        '8',
-                        RIGHT(
-                            '0000000'
-                            + CONVERT(
-                                VARCHAR(7),
-                                @CONTADOR % 10000000
-                            ),
-                            7
-                        )
-                    );
+                        EXEC DBO.PR_CREAR_CLIENTE
+                            @CEDULA = @CEDULA,
+                            @TIPO_CLIENTE = @TIPO_CLIENTE,
+                            @NOMBRE = @NOMBRE,
+                            @RAZON_SOCIAL = @RAZON_SOCIAL,
+                            @ID_DIRECCION = @ID_DIRECCION,
+                            @TELEFONO = @TELEFONO,
+                            @CORREO = @CORREO;
 
-                    SET @CORREO = CONCAT(
-                        'cliente',
-                        @CONTADOR,
-                        '@correo.com'
-                    );
+                        SET @ACTUAL = @ACTUAL + 1;
+                    END;
 
-                    EXEC DBO.PR_CREAR_CLIENTE
-                        @CEDULA = @CEDULA,
-                        @TIPO_CLIENTE = @TIPO_CLIENTE,
-                        @NOMBRE = @NOMBRE,
-                        @RAZON_SOCIAL = @RAZON_SOCIAL,
-                        @ID_DIRECCION = @ID_DIRECCION,
-                        @TELEFONO = @TELEFONO,
-                        @CORREO = @CORREO;
-
-                    SET @ACTUAL = @ACTUAL + 1;
-                END;
-
-            SET @CONTADOR = @CONTADOR + 1;
-        END;
+                SET @CONTADOR = @CONTADOR + 1;
+            END;
 
         COMMIT TRANSACTION;
     END TRY
