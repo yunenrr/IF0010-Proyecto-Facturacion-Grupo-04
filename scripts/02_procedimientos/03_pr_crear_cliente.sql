@@ -49,21 +49,21 @@ BEGIN
             )
             THROW 50003, 'El tipo de cliente no existe.', 1;
 
-        IF @TIPO_CLIENTE = 'FISICA'
-        BEGIN
-            IF NULLIF(@NOMBRE, '') IS NULL
-                THROW 50004, 'El cliente fisico debe tener nombre.', 1;
+        IF
+            @TIPO_CLIENTE = 'FISICA'
+            AND NULLIF(@NOMBRE, '') IS NULL
+            THROW 50004, 'El cliente fisico debe tener nombre.', 1;
 
+        IF @TIPO_CLIENTE = 'FISICA'
             SET @RAZON_SOCIAL = 'NO APLICA';
-        END;
+
+        IF
+            @TIPO_CLIENTE = 'JURIDICA'
+            AND NULLIF(@RAZON_SOCIAL, '') IS NULL
+            THROW 50005, 'El cliente juridico requiere razon social.', 1;
 
         IF @TIPO_CLIENTE = 'JURIDICA'
-        BEGIN
-            IF NULLIF(@RAZON_SOCIAL, '') IS NULL
-                THROW 50005, 'El cliente juridico debe tener razon social.', 1;
-
             SET @NOMBRE = 'NO APLICA';
-        END;
 
         IF @ID_DIRECCION IS NULL
             THROW 50006, 'La direccion es obligatoria.', 1;
