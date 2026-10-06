@@ -23,14 +23,14 @@ BEGIN
 
     BEGIN TRY
         IF @TOTAL_OBJETIVO IS NULL OR @TOTAL_OBJETIVO <= 0
-            THROW 51001, 'La cantidad de direcciones debe ser mayor que cero.', 1;
+            THROW 51001, 'La cantidad debe ser mayor que cero.', 1;
 
         IF
             NOT EXISTS (
                 SELECT 1
                 FROM DBO.BARRIO
             )
-            THROW 51002, 'Primero se deben cargar las ubicaciones.', 1;
+            THROW 51002, 'Primero cargue las ubicaciones.', 1;
 
         BEGIN TRANSACTION;
 
@@ -69,7 +69,10 @@ BEGIN
                 @CODIGO_CANTON,
                 @CODIGO_DISTRITO,
                 @CODIGO_BARRIO,
-                CONCAT('Direccion de prueba numero ', @ACTUAL + 1)
+                CONCAT(
+                    'Direccion de prueba numero ',
+                    @ACTUAL + 1
+                )
             );
 
             SET @ACTUAL = @ACTUAL + 1;
@@ -86,7 +89,8 @@ BEGIN
 END;
 GO
 
-EXEC DBO.PR_GENERAR_DIRECCIONES @TOTAL_OBJETIVO = 500;
+EXEC DBO.PR_GENERAR_DIRECCIONES
+    @TOTAL_OBJETIVO = 500;
 GO
 
 DROP PROCEDURE DBO.PR_GENERAR_DIRECCIONES;
