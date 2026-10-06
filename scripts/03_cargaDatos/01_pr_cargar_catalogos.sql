@@ -29,11 +29,11 @@ BEGIN
             DATOS.DESCRIPCION
         FROM (
             VALUES
-                ('01', 'Factura electronica'),
-                ('02', 'Nota de debito electronica'),
-                ('03', 'Nota de credito electronica'),
-                ('04', 'Tiquete electronico')
-        ) AS DATOS (CODIGO, DESCRIPCION)
+            ('01', 'Factura electronica'),
+            ('02', 'Nota de debito electronica'),
+            ('03', 'Nota de credito electronica'),
+            ('04', 'Tiquete electronico')
+        ) AS DATOS(CODIGO, DESCRIPCION)
         WHERE
             NOT EXISTS (
                 SELECT 1
@@ -48,10 +48,10 @@ BEGIN
             DATOS.DESCRIPCION
         FROM (
             VALUES
-                ('CRC', N'₡', 'Colon costarricense'),
-                ('USD', N'$', 'Dolar estadounidense'),
-                ('EUR', N'€', 'Euro')
-        ) AS DATOS (CODIGO, SIMBOLO, DESCRIPCION)
+            ('CRC', N'₡', 'Colon costarricense'),
+            ('USD', N'$', 'Dolar estadounidense'),
+            ('EUR', N'€', 'Euro')
+        ) AS DATOS(CODIGO, SIMBOLO, DESCRIPCION)
         WHERE
             NOT EXISTS (
                 SELECT 1
@@ -65,11 +65,11 @@ BEGIN
             DATOS.DESCRIPCION
         FROM (
             VALUES
-                ('BORRADOR', 'Factura en preparacion'),
-                ('EMITIDA', 'Factura emitida'),
-                ('PAGADA', 'Factura pagada'),
-                ('CANCELADA', 'Factura cancelada')
-        ) AS DATOS (ESTADO, DESCRIPCION)
+            ('BORRADOR', 'Factura en preparacion'),
+            ('EMITIDA', 'Factura emitida'),
+            ('PAGADA', 'Factura pagada'),
+            ('CANCELADA', 'Factura cancelada')
+        ) AS DATOS(ESTADO, DESCRIPCION)
         WHERE
             NOT EXISTS (
                 SELECT 1
@@ -83,9 +83,9 @@ BEGIN
             DATOS.DESCRIPCION
         FROM (
             VALUES
-                ('FISICA', 'Persona fisica'),
-                ('JURIDICA', 'Persona juridica')
-        ) AS DATOS (CODIGO, DESCRIPCION)
+            ('FISICA', 'Persona fisica'),
+            ('JURIDICA', 'Persona juridica')
+        ) AS DATOS(CODIGO, DESCRIPCION)
         WHERE
             NOT EXISTS (
                 SELECT 1
@@ -99,9 +99,9 @@ BEGIN
             DATOS.DESCRIPCION
         FROM (
             VALUES
-                ('FISICO', 'Producto fisico'),
-                ('DIGITAL', 'Producto digital')
-        ) AS DATOS (CODIGO, DESCRIPCION)
+            ('FISICO', 'Producto fisico'),
+            ('DIGITAL', 'Producto digital')
+        ) AS DATOS(CODIGO, DESCRIPCION)
         WHERE
             NOT EXISTS (
                 SELECT 1
