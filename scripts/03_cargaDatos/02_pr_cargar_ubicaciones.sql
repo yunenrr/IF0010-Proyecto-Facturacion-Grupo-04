@@ -29,10 +29,13 @@ BEGIN
                 FROM DBO.PROVINCIA
                 WHERE CODIGO_PROVINCIA = 1
             )
-        BEGIN
-            INSERT INTO DBO.PROVINCIA (CODIGO_PROVINCIA, NOMBRE)
-            VALUES (1, 'San Jose');
-        END;
+            BEGIN
+                INSERT INTO DBO.PROVINCIA (
+                    CODIGO_PROVINCIA,
+                    NOMBRE
+                )
+                VALUES (1, 'San Jose');
+            END;
 
         IF
             NOT EXISTS (
@@ -42,14 +45,14 @@ BEGIN
                     CODIGO_PROVINCIA = 1
                     AND CODIGO_CANTON = 1
             )
-        BEGIN
-            INSERT INTO DBO.CANTON (
-                CODIGO_PROVINCIA,
-                CODIGO_CANTON,
-                NOMBRE
-            )
-            VALUES (1, 1, 'San Jose');
-        END;
+            BEGIN
+                INSERT INTO DBO.CANTON (
+                    CODIGO_PROVINCIA,
+                    CODIGO_CANTON,
+                    NOMBRE
+                )
+                VALUES (1, 1, 'San Jose');
+            END;
 
         IF
             NOT EXISTS (
@@ -60,15 +63,15 @@ BEGIN
                     AND CODIGO_CANTON = 1
                     AND CODIGO_DISTRITO = 1
             )
-        BEGIN
-            INSERT INTO DBO.DISTRITO (
-                CODIGO_PROVINCIA,
-                CODIGO_CANTON,
-                CODIGO_DISTRITO,
-                NOMBRE
-            )
-            VALUES (1, 1, 1, 'Carmen');
-        END;
+            BEGIN
+                INSERT INTO DBO.DISTRITO (
+                    CODIGO_PROVINCIA,
+                    CODIGO_CANTON,
+                    CODIGO_DISTRITO,
+                    NOMBRE
+                )
+                VALUES (1, 1, 1, 'Carmen');
+            END;
 
         IF
             NOT EXISTS (
@@ -80,16 +83,16 @@ BEGIN
                     AND CODIGO_DISTRITO = 1
                     AND CODIGO_BARRIO = 1
             )
-        BEGIN
-            INSERT INTO DBO.BARRIO (
-                CODIGO_PROVINCIA,
-                CODIGO_CANTON,
-                CODIGO_DISTRITO,
-                CODIGO_BARRIO,
-                NOMBRE
-            )
-            VALUES (1, 1, 1, 1, 'Barrio Central');
-        END;
+            BEGIN
+                INSERT INTO DBO.BARRIO (
+                    CODIGO_PROVINCIA,
+                    CODIGO_CANTON,
+                    CODIGO_DISTRITO,
+                    CODIGO_BARRIO,
+                    NOMBRE
+                )
+                VALUES (1, 1, 1, 1, 'Barrio Central');
+            END;
 
         COMMIT TRANSACTION;
     END TRY
