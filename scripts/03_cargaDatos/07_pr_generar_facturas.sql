@@ -388,6 +388,7 @@ BEGIN
                         3 + NF.ID_FACTURA % 3
                     )
                 ),
+
                 DETALLES_CALCULADOS AS (
                     SELECT
                         D.ID_FACTURA,
@@ -490,7 +491,7 @@ BEGIN
                         ) AS TOTAL
                     FROM DBO.DETALLEFACTURA AS D
                     INNER JOIN #NUEVAS_FACTURAS AS NF
-                        ON NF.ID_FACTURA = D.ID_FACTURA
+                        ON D.ID_FACTURA = NF.ID_FACTURA
                     GROUP BY D.ID_FACTURA
                 )
 
@@ -503,7 +504,7 @@ BEGIN
                     F.FECHA_MODIFICACION = @AHORA
                 FROM DBO.FACTURA AS F
                 INNER JOIN TOTALES AS TOT
-                    ON TOT.ID_FACTURA = F.ID_FACTURA;
+                    ON F.ID_FACTURA = TOT.ID_FACTURA;
 
                 COMMIT TRANSACTION;
 
