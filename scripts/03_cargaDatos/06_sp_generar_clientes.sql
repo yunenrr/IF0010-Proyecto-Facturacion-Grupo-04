@@ -3,16 +3,16 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM sys.objects
-    WHERE name = 'SP_GENERAR_CLIENTES'
-      AND type = 'P'
+    FROM SYS.OBJECTS
+    WHERE NAME = 'SP_GENERAR_CLIENTES'
+      AND TYPE = 'P'
 )
 BEGIN
-    DROP PROCEDURE dbo.SP_GENERAR_CLIENTES;
+    DROP PROCEDURE DBO.SP_GENERAR_CLIENTES;
 END
 GO
 
-CREATE PROCEDURE dbo.SP_GENERAR_CLIENTES
+CREATE PROCEDURE DBO.SP_GENERAR_CLIENTES
     @TOTAL_OBJETIVO INT = 50000
 AS
 BEGIN
@@ -25,19 +25,19 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.TIPOCLIENTE
+            FROM DBO.TIPOCLIENTE
             WHERE CODIGO = 'FISICA'
         )
         OR NOT EXISTS (
             SELECT 1
-            FROM dbo.TIPOCLIENTE
+            FROM DBO.TIPOCLIENTE
             WHERE CODIGO = 'JURIDICA'
         )
             THROW 50021, 'Primero se deben cargar los tipos de cliente.', 1;
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.DIRECCION
+            FROM DBO.DIRECCION
         )
             THROW 50022, 'Primero se deben generar direcciones.', 1;
 
@@ -57,10 +57,10 @@ BEGIN
         DECLARE @CORREO VARCHAR(100);
 
         SELECT @ACTUAL = COUNT_BIG(*)
-        FROM dbo.CLIENTE;
+        FROM DBO.CLIENTE;
 
         SELECT @CANTIDAD_DIRECCIONES = COUNT(*)
-        FROM dbo.DIRECCION;
+        FROM DBO.DIRECCION;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
         BEGIN
@@ -71,15 +71,15 @@ BEGIN
 
             IF NOT EXISTS (
                 SELECT 1
-                FROM dbo.CLIENTE
+                FROM DBO.CLIENTE
                 WHERE CEDULA = @CEDULA
             )
             BEGIN
                 SET @POSICION = CONVERT(INT, @ACTUAL % @CANTIDAD_DIRECCIONES);
 
-                SELECT @ID_DIRECCION = D.ID_DIRECCION
-                FROM dbo.DIRECCION AS D
-                ORDER BY D.ID_DIRECCION
+                SELECT @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                FROM DBO.DIRECCION AS DIRECCION
+                ORDER BY DIRECCION.ID_DIRECCION
                 OFFSET @POSICION ROWS
                 FETCH NEXT 1 ROWS ONLY;
 
@@ -110,7 +110,7 @@ BEGIN
 
                 SET @CORREO = CONCAT('cliente', @CONTADOR, '@correo.com');
 
-                EXEC dbo.SP_CREAR_CLIENTE
+                EXEC DBO.SP_CREAR_CLIENTE
                     @CEDULA = @CEDULA,
                     @TIPO_CLIENTE = @TIPO_CLIENTE,
                     @NOMBRE = @NOMBRE,
@@ -136,8 +136,8 @@ BEGIN
 END;
 GO
 
-EXEC dbo.SP_GENERAR_CLIENTES @TOTAL_OBJETIVO = 50000;
+EXEC DBO.SP_GENERAR_CLIENTES @TOTAL_OBJETIVO = 50000;
 GO
 
-DROP PROCEDURE dbo.SP_GENERAR_CLIENTES;
+DROP PROCEDURE DBO.SP_GENERAR_CLIENTES;
 GO
