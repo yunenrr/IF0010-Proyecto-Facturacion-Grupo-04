@@ -89,12 +89,12 @@ BEGIN
                             @ACTUAL % @CANTIDAD_DIRECCIONES
                         );
 
-                        SELECT
-                            @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                        SELECT @ID_DIRECCION = DIRECCION.ID_DIRECCION
                         FROM DBO.DIRECCION AS DIRECCION
-                        ORDER BY DIRECCION.ID_DIRECCION
-                        OFFSET @POSICION ROWS
-                        FETCH NEXT 1 ROWS ONLY;
+                        ORDER BY
+                            DIRECCION.ID_DIRECCION
+                            OFFSET @POSICION ROWS
+                            FETCH NEXT 1 ROWS ONLY;
 
                         IF @CONTADOR % 2 = 0
                             SET @TIPO_CLIENTE = 'FISICA';
