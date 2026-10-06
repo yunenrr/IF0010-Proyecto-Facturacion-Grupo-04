@@ -131,8 +131,8 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY EMPRESA.CEDULA
-            ),
-            EMPRESA.CEDULA
+            ) AS NUMERO,
+            EMPRESA.CEDULA AS CEDULA
         FROM DBO.EMPRESA AS EMPRESA
         WHERE EMPRESA.ACTIVO = 1;
 
@@ -143,8 +143,8 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY CLIENTE.CEDULA
-            ),
-            CLIENTE.CEDULA
+            ) AS NUMERO,
+            CLIENTE.CEDULA AS CEDULA
         FROM DBO.CLIENTE AS CLIENTE;
 
         INSERT INTO #TIPOS (
@@ -154,8 +154,8 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY TIPO.CODIGO
-            ),
-            TIPO.CODIGO
+            ) AS NUMERO,
+            TIPO.CODIGO AS CODIGO
         FROM DBO.TIPODOCUMENTO AS TIPO;
 
         INSERT INTO #MONEDAS (
@@ -165,8 +165,8 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY MONEDA.CODIGO
-            ),
-            MONEDA.CODIGO
+            ) AS NUMERO,
+            MONEDA.CODIGO AS CODIGO
         FROM DBO.MONEDA AS MONEDA;
 
         INSERT INTO #ESTADOS (
@@ -176,8 +176,8 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY ESTADO.ESTADO
-            ),
-            ESTADO.ESTADO
+            ) AS NUMERO,
+            ESTADO.ESTADO AS ESTADO
         FROM DBO.ESTADOFACTURA AS ESTADO;
 
         INSERT INTO #PRODUCTOS (
@@ -190,11 +190,11 @@ BEGIN
         SELECT
             ROW_NUMBER() OVER (
                 ORDER BY PRODUCTO.CODIGO
-            ),
-            PRODUCTO.CODIGO,
-            PRODUCTO.DESCRIPCION,
-            PRODUCTO.PRECIO_UNITARIO,
-            PRODUCTO.PORCENTAJE_IMPUESTO
+            ) AS NUMERO,
+            PRODUCTO.CODIGO AS CODIGO,
+            PRODUCTO.DESCRIPCION AS DESCRIPCION,
+            PRODUCTO.PRECIO_UNITARIO AS PRECIO_UNITARIO,
+            PRODUCTO.PORCENTAJE_IMPUESTO AS PORCENTAJE_IMPUESTO
         FROM DBO.PRODUCTO AS PRODUCTO
         WHERE PRODUCTO.ACTIVO = 1;
 
@@ -245,6 +245,7 @@ BEGIN
                     FROM SYS.ALL_OBJECTS AS OBJETO_A
                     CROSS JOIN SYS.ALL_OBJECTS AS OBJETO_B
                 )
+
                 INSERT INTO DBO.FACTURA (
                     IDENTIFICADOR_COMPROBANTE,
                     CEDULA_EMPRESA,
@@ -262,9 +263,10 @@ BEGIN
                     FECHA_MODIFICACION
                 )
                 OUTPUT INSERTED.ID_FACTURA
-                INTO #NUEVAS_FACTURAS (
-                    ID_FACTURA
-                )
+                INTO
+                    #NUEVAS_FACTURAS (
+                        ID_FACTURA
+                    )
                 SELECT
                     CONCAT(
                         'FAC-',
@@ -276,12 +278,12 @@ BEGIN
                             '-',
                             ''
                         )
-                    ),
-                    EMPRESA.CEDULA,
-                    CLIENTE.CEDULA,
-                    TIPO.CODIGO,
-                    MONEDA.CODIGO,
-                    ESTADO.ESTADO,
+                    ) AS IDENTIFICADOR_COMPROBANTE,
+                    EMPRESA.CEDULA AS CEDULA_EMPRESA,
+                    CLIENTE.CEDULA AS CEDULA_CLIENTE,
+                    TIPO.CODIGO AS CODIGO_TIPO_DOCUMENTO,
+                    MONEDA.CODIGO AS CODIGO_MONEDA,
+                    ESTADO.ESTADO AS ESTADO_FACTURA,
                     DATEADD(
                         DAY,
                         -CONVERT(
@@ -292,14 +294,14 @@ BEGIN
                             ) % 365
                         ),
                         @AHORA
-                    ),
-                    0,
-                    0,
-                    0,
-                    0,
-                    'Factura generada para datos',
-                    @AHORA,
-                    @AHORA
+                    ) AS FECHA_EMISION,
+                    0 AS SUBTOTAL,
+                    0 AS TOTAL_DESCUENTOS,
+                    0 AS TOTAL_IMPUESTOS,
+                    0 AS TOTAL,
+                    'Factura generada para datos' AS OBSERVACIONES,
+                    @AHORA AS FECHA_CREACION,
+                    @AHORA AS FECHA_MODIFICACION
                 FROM NUMEROS AS NUMERO
                 INNER JOIN #EMPRESAS AS EMPRESA
                     ON EMPRESA.NUMERO = (
@@ -344,12 +346,13 @@ BEGIN
 
                 WITH DETALLES_BASE AS (
                     SELECT
-                        NUEVA.ID_FACTURA,
-                        LINEA.NUMERO_LINEA,
-                        PRODUCTO.CODIGO,
-                        PRODUCTO.DESCRIPCION,
-                        PRODUCTO.PRECIO_UNITARIO,
-                        PRODUCTO.PORCENTAJE_IMPUESTO,
+                        NUEVA.ID_FACTURA AS ID_FACTURA,
+                        LINEA.NUMERO_LINEA AS NUMERO_LINEA,
+                        PRODUCTO.CODIGO AS CODIGO,
+                        PRODUCTO.DESCRIPCION AS DESCRIPCION,
+                        PRODUCTO.PRECIO_UNITARIO AS PRECIO_UNITARIO,
+                        PRODUCTO.PORCENTAJE_IMPUESTO
+                            AS PORCENTAJE_IMPUESTO,
                         CONVERT(
                             DECIMAL(18, 4),
                             1
@@ -388,14 +391,16 @@ BEGIN
                 ),
                 DETALLES_CALCULADOS AS (
                     SELECT
-                        DETALLE.ID_FACTURA,
-                        DETALLE.NUMERO_LINEA,
-                        DETALLE.CODIGO,
-                        DETALLE.DESCRIPCION,
-                        DETALLE.PRECIO_UNITARIO,
-                        DETALLE.PORCENTAJE_IMPUESTO,
-                        DETALLE.CANTIDAD,
-                        DETALLE.PORCENTAJE_DESCUENTO,
+                        DETALLE.ID_FACTURA AS ID_FACTURA,
+                        DETALLE.NUMERO_LINEA AS NUMERO_LINEA,
+                        DETALLE.CODIGO AS CODIGO,
+                        DETALLE.DESCRIPCION AS DESCRIPCION,
+                        DETALLE.PRECIO_UNITARIO AS PRECIO_UNITARIO,
+                        DETALLE.PORCENTAJE_IMPUESTO
+                            AS PORCENTAJE_IMPUESTO,
+                        DETALLE.CANTIDAD AS CANTIDAD,
+                        DETALLE.PORCENTAJE_DESCUENTO
+                            AS PORCENTAJE_DESCUENTO,
                         ROUND(
                             DETALLE.CANTIDAD
                             * DETALLE.PRECIO_UNITARIO,
@@ -403,6 +408,7 @@ BEGIN
                         ) AS SUBTOTAL
                     FROM DETALLES_BASE AS DETALLE
                 )
+
                 INSERT INTO DBO.DETALLEFACTURA (
                     ID_FACTURA,
                     NUMERO_LINEA,
@@ -417,20 +423,21 @@ BEGIN
                     TOTAL_LINEA
                 )
                 SELECT
-                    DETALLE.ID_FACTURA,
-                    DETALLE.NUMERO_LINEA,
-                    DETALLE.CODIGO,
-                    DETALLE.DESCRIPCION,
-                    DETALLE.CANTIDAD,
-                    DETALLE.PRECIO_UNITARIO,
-                    DETALLE.PORCENTAJE_IMPUESTO,
-                    DETALLE.SUBTOTAL,
+                    DETALLE.ID_FACTURA AS ID_FACTURA,
+                    DETALLE.NUMERO_LINEA AS NUMERO_LINEA,
+                    DETALLE.CODIGO AS CODIGO_PRODUCTO,
+                    DETALLE.DESCRIPCION AS DESCRIPCION,
+                    DETALLE.CANTIDAD AS CANTIDAD,
+                    DETALLE.PRECIO_UNITARIO AS PRECIO_UNITARIO,
+                    DETALLE.PORCENTAJE_IMPUESTO
+                        AS PORCENTAJE_IMPUESTO,
+                    DETALLE.SUBTOTAL AS SUBTOTAL,
                     ROUND(
                         DETALLE.SUBTOTAL
                         * DETALLE.PORCENTAJE_DESCUENTO
                         / 100.0,
                         2
-                    ),
+                    ) AS MONTO_DESCUENTO,
                     ROUND(
                         (
                             DETALLE.SUBTOTAL
@@ -444,7 +451,7 @@ BEGIN
                         * DETALLE.PORCENTAJE_IMPUESTO
                         / 100.0,
                         2
-                    ),
+                    ) AS MONTO_IMPUESTO,
                     ROUND(
                         DETALLE.SUBTOTAL
                         - ROUND(
@@ -467,12 +474,12 @@ BEGIN
                             / 100.0
                         ),
                         2
-                    )
+                    ) AS TOTAL_LINEA
                 FROM DETALLES_CALCULADOS AS DETALLE;
 
                 WITH TOTALES AS (
                     SELECT
-                        DETALLE.ID_FACTURA,
+                        DETALLE.ID_FACTURA AS ID_FACTURA,
                         SUM(
                             DETALLE.SUBTOTAL
                         ) AS SUBTOTAL,
@@ -490,6 +497,7 @@ BEGIN
                         ON NUEVA.ID_FACTURA = DETALLE.ID_FACTURA
                     GROUP BY DETALLE.ID_FACTURA
                 )
+
                 UPDATE FACTURA
                 SET
                     FACTURA.SUBTOTAL = TOTALES.SUBTOTAL,
