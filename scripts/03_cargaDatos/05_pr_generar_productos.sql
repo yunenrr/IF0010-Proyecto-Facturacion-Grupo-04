@@ -54,62 +54,62 @@ BEGIN
         FROM DBO.PRODUCTO;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
-        BEGIN
-            SET @CODIGO = CONCAT(
-                'PROD-GENERADO-',
-                @CONTADOR
-            );
+            BEGIN
+                SET @CODIGO = CONCAT(
+                    'PROD-GENERADO-',
+                    @CONTADOR
+                );
 
-            IF
-                NOT EXISTS (
-                    SELECT 1
-                    FROM DBO.PRODUCTO
-                    WHERE CODIGO = @CODIGO
-                )
-                BEGIN
-                    SET @TIPO = CASE
-                        WHEN @CONTADOR % 2 = 0
-                            THEN 'DIGITAL'
-                        ELSE 'FISICO'
+                IF
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM DBO.PRODUCTO
+                        WHERE CODIGO = @CODIGO
+                    )
+                    BEGIN
+                        SET @TIPO = CASE
+                            WHEN @CONTADOR % 2 = 0
+                                THEN 'DIGITAL'
+                            ELSE 'FISICO'
+                        END;
+
+                        SET @EXISTENCIA = CASE
+                            WHEN @TIPO = 'FISICO'
+                                THEN 10 + @CONTADOR % 491
+                            ELSE 0
+                        END;
+
+                        SET @DESCRIPCION = CONCAT(
+                            'Producto de prueba ',
+                            @CONTADOR
+                        );
+
+                        SET @PRECIO = CONVERT(
+                            DECIMAL(18, 2),
+                            100 + (@CONTADOR % 1000) * 25.50
+                        );
+
+                        SET @IMPUESTO = CASE @CONTADOR % 4
+                            WHEN 0 THEN 0
+                            WHEN 1 THEN 1
+                            WHEN 2 THEN 4
+                            ELSE 13
+                        END;
+
+                        EXEC DBO.PR_CREAR_PRODUCTO
+                            @CODIGO = @CODIGO,
+                            @DESCRIPCION = @DESCRIPCION,
+                            @TIPO_PRODUCTO = @TIPO,
+                            @EXISTENCIA = @EXISTENCIA,
+                            @PRECIO_UNITARIO = @PRECIO,
+                            @PORCENTAJE_IMPUESTO = @IMPUESTO,
+                            @ACTIVO = 1;
+
+                        SET @ACTUAL = @ACTUAL + 1;
                     END;
 
-                    SET @EXISTENCIA = CASE
-                        WHEN @TIPO = 'FISICO'
-                            THEN 10 + @CONTADOR % 491
-                        ELSE 0
-                    END;
-
-                    SET @DESCRIPCION = CONCAT(
-                        'Producto de prueba ',
-                        @CONTADOR
-                    );
-
-                    SET @PRECIO = CONVERT(
-                        DECIMAL(18, 2),
-                        100 + (@CONTADOR % 1000) * 25.50
-                    );
-
-                    SET @IMPUESTO = CASE @CONTADOR % 4
-                        WHEN 0 THEN 0
-                        WHEN 1 THEN 1
-                        WHEN 2 THEN 4
-                        ELSE 13
-                    END;
-
-                    EXEC DBO.PR_CREAR_PRODUCTO
-                        @CODIGO = @CODIGO,
-                        @DESCRIPCION = @DESCRIPCION,
-                        @TIPO_PRODUCTO = @TIPO,
-                        @EXISTENCIA = @EXISTENCIA,
-                        @PRECIO_UNITARIO = @PRECIO,
-                        @PORCENTAJE_IMPUESTO = @IMPUESTO,
-                        @ACTIVO = 1;
-
-                    SET @ACTUAL = @ACTUAL + 1;
-                END;
-
-            SET @CONTADOR = @CONTADOR + 1;
-        END;
+                SET @CONTADOR = @CONTADOR + 1;
+            END;
 
         COMMIT TRANSACTION;
     END TRY
