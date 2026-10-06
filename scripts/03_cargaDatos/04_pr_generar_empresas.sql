@@ -52,78 +52,78 @@ BEGIN
         FROM DBO.DIRECCION;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
-        BEGIN
-            SET @CEDULA = CONCAT(
-                '3-101-',
-                RIGHT(
-                    '000000000'
-                    + CONVERT(VARCHAR(9), @CONTADOR),
-                    9
-                )
-            );
+            BEGIN
+                SET @CEDULA = CONCAT(
+                    '3-101-',
+                    RIGHT(
+                        '000000000'
+                        + CONVERT(VARCHAR(9), @CONTADOR),
+                        9
+                    )
+                );
 
-            IF
-                NOT EXISTS (
-                    SELECT 1
-                    FROM DBO.EMPRESA
-                    WHERE CEDULA = @CEDULA
-                )
-                BEGIN
-                    SET @POSICION = CONVERT(
-                        INT,
-                        @ACTUAL % @CANTIDAD_DIRECCIONES
-                    );
+                IF
+                    NOT EXISTS (
+                        SELECT 1
+                        FROM DBO.EMPRESA
+                        WHERE CEDULA = @CEDULA
+                    )
+                    BEGIN
+                        SET @POSICION = CONVERT(
+                            INT,
+                            @ACTUAL % @CANTIDAD_DIRECCIONES
+                        );
 
-                    SELECT
-                        @ID_DIRECCION = DIRECCION.ID_DIRECCION
-                    FROM DBO.DIRECCION AS DIRECCION
-                    ORDER BY DIRECCION.ID_DIRECCION
-                    OFFSET @POSICION ROWS
-                    FETCH NEXT 1 ROWS ONLY;
+                        SELECT
+                            @ID_DIRECCION = DIRECCION.ID_DIRECCION
+                        FROM DBO.DIRECCION AS DIRECCION
+                        ORDER BY DIRECCION.ID_DIRECCION
+                        OFFSET @POSICION ROWS
+                        FETCH NEXT 1 ROWS ONLY;
 
-                    SET @NOMBRE = CONCAT(
-                        'Empresa de prueba ',
-                        @CONTADOR
-                    );
+                        SET @NOMBRE = CONCAT(
+                            'Empresa de prueba ',
+                            @CONTADOR
+                        );
 
-                    SET @RAZON = CONCAT(
-                        'Empresa de prueba ',
-                        @CONTADOR,
-                        ' S.A.'
-                    );
+                        SET @RAZON = CONCAT(
+                            'Empresa de prueba ',
+                            @CONTADOR,
+                            ' S.A.'
+                        );
 
-                    SET @TELEFONO = CONCAT(
-                        '2',
-                        RIGHT(
-                            '0000000'
-                            + CONVERT(
-                                VARCHAR(7),
-                                @CONTADOR % 10000000
-                            ),
-                            7
-                        )
-                    );
+                        SET @TELEFONO = CONCAT(
+                            '2',
+                            RIGHT(
+                                '0000000'
+                                + CONVERT(
+                                    VARCHAR(7),
+                                    @CONTADOR % 10000000
+                                ),
+                                7
+                            )
+                        );
 
-                    SET @CORREO = CONCAT(
-                        'empresa',
-                        @CONTADOR,
-                        '@correo.com'
-                    );
+                        SET @CORREO = CONCAT(
+                            'empresa',
+                            @CONTADOR,
+                            '@correo.com'
+                        );
 
-                    EXEC DBO.PR_CREAR_EMPRESA
-                        @CEDULA = @CEDULA,
-                        @NOMBRE_COMERCIAL = @NOMBRE,
-                        @RAZON_SOCIAL = @RAZON,
-                        @ID_DIRECCION = @ID_DIRECCION,
-                        @TELEFONO = @TELEFONO,
-                        @CORREO = @CORREO,
-                        @ACTIVO = 1;
+                        EXEC DBO.PR_CREAR_EMPRESA
+                            @CEDULA = @CEDULA,
+                            @NOMBRE_COMERCIAL = @NOMBRE,
+                            @RAZON_SOCIAL = @RAZON,
+                            @ID_DIRECCION = @ID_DIRECCION,
+                            @TELEFONO = @TELEFONO,
+                            @CORREO = @CORREO,
+                            @ACTIVO = 1;
 
-                    SET @ACTUAL = @ACTUAL + 1;
-                END;
+                        SET @ACTUAL = @ACTUAL + 1;
+                    END;
 
-            SET @CONTADOR = @CONTADOR + 1;
-        END;
+                SET @CONTADOR = @CONTADOR + 1;
+            END;
 
         COMMIT TRANSACTION;
     END TRY
