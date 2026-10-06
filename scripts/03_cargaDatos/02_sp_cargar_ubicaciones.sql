@@ -3,16 +3,16 @@ GO
 
 IF EXISTS (
     SELECT 1
-    FROM sys.objects
-    WHERE name = 'SP_CARGAR_UBICACIONES'
-      AND type = 'P'
+    FROM SYS.OBJECTS
+    WHERE NAME = 'SP_CARGAR_UBICACIONES'
+      AND TYPE = 'P'
 )
 BEGIN
-    DROP PROCEDURE dbo.SP_CARGAR_UBICACIONES;
+    DROP PROCEDURE DBO.SP_CARGAR_UBICACIONES;
 END
 GO
 
-CREATE PROCEDURE dbo.SP_CARGAR_UBICACIONES
+CREATE PROCEDURE DBO.SP_CARGAR_UBICACIONES
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -23,34 +23,34 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.PROVINCIA
+            FROM DBO.PROVINCIA
             WHERE CODIGO_PROVINCIA = 1
         )
         BEGIN
-            INSERT INTO dbo.PROVINCIA (CODIGO_PROVINCIA, NOMBRE)
+            INSERT INTO DBO.PROVINCIA (CODIGO_PROVINCIA, NOMBRE)
             VALUES (1, 'San Jose');
         END;
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.CANTON
+            FROM DBO.CANTON
             WHERE CODIGO_PROVINCIA = 1
               AND CODIGO_CANTON = 1
         )
         BEGIN
-            INSERT INTO dbo.CANTON (CODIGO_PROVINCIA, CODIGO_CANTON, NOMBRE)
+            INSERT INTO DBO.CANTON (CODIGO_PROVINCIA, CODIGO_CANTON, NOMBRE)
             VALUES (1, 1, 'San Jose');
         END;
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.DISTRITO
+            FROM DBO.DISTRITO
             WHERE CODIGO_PROVINCIA = 1
               AND CODIGO_CANTON = 1
               AND CODIGO_DISTRITO = 1
         )
         BEGIN
-            INSERT INTO dbo.DISTRITO (
+            INSERT INTO DBO.DISTRITO (
                 CODIGO_PROVINCIA,
                 CODIGO_CANTON,
                 CODIGO_DISTRITO,
@@ -61,14 +61,14 @@ BEGIN
 
         IF NOT EXISTS (
             SELECT 1
-            FROM dbo.BARRIO
+            FROM DBO.BARRIO
             WHERE CODIGO_PROVINCIA = 1
               AND CODIGO_CANTON = 1
               AND CODIGO_DISTRITO = 1
               AND CODIGO_BARRIO = 1
         )
         BEGIN
-            INSERT INTO dbo.BARRIO (
+            INSERT INTO DBO.BARRIO (
                 CODIGO_PROVINCIA,
                 CODIGO_CANTON,
                 CODIGO_DISTRITO,
@@ -89,8 +89,8 @@ BEGIN
 END;
 GO
 
-EXEC dbo.SP_CARGAR_UBICACIONES;
+EXEC DBO.SP_CARGAR_UBICACIONES;
 GO
 
-DROP PROCEDURE dbo.SP_CARGAR_UBICACIONES;
+DROP PROCEDURE DBO.SP_CARGAR_UBICACIONES;
 GO
