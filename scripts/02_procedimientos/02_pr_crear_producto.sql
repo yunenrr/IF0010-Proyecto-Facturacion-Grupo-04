@@ -53,7 +53,7 @@ BEGIN
             THROW 51305, 'La existencia debe ser mayor o igual a cero.', 1;
 
         IF @TIPO_PRODUCTO = 'DIGITAL' AND @EXISTENCIA <> 0
-            THROW 51306, 'Los productos digitales deben tener existencia cero.', 1;
+            THROW 51306, 'El producto digital debe tener existencia cero.', 1;
 
         IF @PRECIO_UNITARIO IS NULL OR @PRECIO_UNITARIO <= 0
             THROW 51307, 'El precio debe ser mayor que cero.', 1;
