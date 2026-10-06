@@ -56,27 +56,27 @@ BEGIN
             BARRIO.CODIGO_BARRIO;
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
-        BEGIN
-            INSERT INTO DBO.DIRECCION (
-                CODIGO_PROVINCIA,
-                CODIGO_CANTON,
-                CODIGO_DISTRITO,
-                CODIGO_BARRIO,
-                SENAS_EXACTAS
-            )
-            VALUES (
-                @CODIGO_PROVINCIA,
-                @CODIGO_CANTON,
-                @CODIGO_DISTRITO,
-                @CODIGO_BARRIO,
-                CONCAT(
-                    'Direccion de prueba numero ',
-                    @ACTUAL + 1
+            BEGIN
+                INSERT INTO DBO.DIRECCION (
+                    CODIGO_PROVINCIA,
+                    CODIGO_CANTON,
+                    CODIGO_DISTRITO,
+                    CODIGO_BARRIO,
+                    SENAS_EXACTAS
                 )
-            );
+                VALUES (
+                    @CODIGO_PROVINCIA,
+                    @CODIGO_CANTON,
+                    @CODIGO_DISTRITO,
+                    @CODIGO_BARRIO,
+                    CONCAT(
+                        'Direccion de prueba numero ',
+                        @ACTUAL + 1
+                    )
+                );
 
-            SET @ACTUAL = @ACTUAL + 1;
-        END;
+                SET @ACTUAL = @ACTUAL + 1;
+            END;
 
         COMMIT TRANSACTION;
     END TRY
