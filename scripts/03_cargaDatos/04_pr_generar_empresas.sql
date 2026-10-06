@@ -78,10 +78,8 @@ BEGIN
                         FROM DBO.DIRECCION AS DIRECCION
                         ORDER BY
                             DIRECCION.ID_DIRECCION
-                        OFFSET
-                            @POSICION ROWS
-                        FETCH NEXT
-                            1 ROWS ONLY;
+                            OFFSET @POSICION ROWS
+                            FETCH NEXT 1 ROWS ONLY;
 
                         SET @NOMBRE = CONCAT(
                             'Empresa de prueba ',
