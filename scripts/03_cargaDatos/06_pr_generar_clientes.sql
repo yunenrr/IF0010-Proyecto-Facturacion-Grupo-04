@@ -25,31 +25,37 @@ BEGIN
         IF @TOTAL_OBJETIVO IS NULL OR @TOTAL_OBJETIVO < 50000
             THROW 50020, 'Se deben generar al menos 50000 clientes.', 1;
 
-        IF (
+        IF
             NOT EXISTS (
                 SELECT 1
                 FROM DBO.TIPOCLIENTE
                 WHERE CODIGO = 'FISICA'
             )
-            OR NOT EXISTS (
+            THROW 50021, 'No existe el tipo FISICA.', 1;
+
+        IF
+            NOT EXISTS (
                 SELECT 1
                 FROM DBO.TIPOCLIENTE
                 WHERE CODIGO = 'JURIDICA'
             )
-        )
-            THROW 50021, 'Primero cargue los tipos de cliente.', 1;
+            THROW 50022, 'No existe el tipo JURIDICA.', 1;
 
         IF
             NOT EXISTS (
                 SELECT 1
                 FROM DBO.DIRECCION
             )
-            THROW 50022, 'Primero genere las direcciones.', 1;
+            THROW 50023, 'Primero genere las direcciones.', 1;
 
         BEGIN TRANSACTION;
 
         DECLARE @ACTUAL BIGINT;
         DECLARE @CONTADOR INT = 1;
+        DECLARE @NUMERO_TIPO INT;
+        DECLARE @PROVINCIA INT;
+        DECLARE @SEGUNDO_GRUPO INT;
+        DECLARE @TERCER_GRUPO INT;
         DECLARE @CANTIDAD_DIRECCIONES INT;
         DECLARE @POSICION INT;
         DECLARE @CEDULA VARCHAR(20);
@@ -68,14 +74,66 @@ BEGIN
 
         WHILE @ACTUAL < @TOTAL_OBJETIVO
             BEGIN
-                SET @CEDULA = CONCAT(
-                    'CLI',
-                    RIGHT(
-                        '00000000'
-                        + CONVERT(VARCHAR(8), @CONTADOR),
-                        8
-                    )
-                );
+                SET @NUMERO_TIPO = (
+                    @CONTADOR + 1
+                ) / 2;
+
+                IF @CONTADOR % 2 = 0
+                    SET @TIPO_CLIENTE = 'FISICA';
+
+                IF @CONTADOR % 2 <> 0
+                    SET @TIPO_CLIENTE = 'JURIDICA';
+
+                IF @TIPO_CLIENTE = 'FISICA'
+                    SET @PROVINCIA = (
+                        (@NUMERO_TIPO - 1) % 7
+                    ) + 1;
+
+                IF @TIPO_CLIENTE = 'FISICA'
+                    SET @SEGUNDO_GRUPO = 1000 + (
+                        (@NUMERO_TIPO - 1) / 9999
+                    );
+
+                IF @TIPO_CLIENTE = 'FISICA'
+                    SET @TERCER_GRUPO = (
+                        (@NUMERO_TIPO - 1) % 9999
+                    ) + 1;
+
+                IF @TIPO_CLIENTE = 'FISICA'
+                    SET @CEDULA = CONCAT(
+                        @PROVINCIA,
+                        '-',
+                        RIGHT(
+                            '0000'
+                            + CONVERT(
+                                VARCHAR(4),
+                                @SEGUNDO_GRUPO
+                            ),
+                            4
+                        ),
+                        '-',
+                        RIGHT(
+                            '0000'
+                            + CONVERT(
+                                VARCHAR(4),
+                                @TERCER_GRUPO
+                            ),
+                            4
+                        )
+                    );
+
+                IF @TIPO_CLIENTE = 'JURIDICA'
+                    SET @CEDULA = CONCAT(
+                        '3-101-',
+                        RIGHT(
+                            '000000'
+                            + CONVERT(
+                                VARCHAR(6),
+                                @NUMERO_TIPO
+                            ),
+                            6
+                        )
+                    );
 
                 IF
                     NOT EXISTS (
@@ -89,35 +147,32 @@ BEGIN
                             @ACTUAL % @CANTIDAD_DIRECCIONES
                         );
 
-                        SELECT @ID_DIRECCION = DIRECCION.ID_DIRECCION
-                        FROM DBO.DIRECCION AS DIRECCION
+                        SELECT @ID_DIRECCION = D.ID_DIRECCION
+                        FROM DBO.DIRECCION AS D
                         ORDER BY
-                            DIRECCION.ID_DIRECCION
+                            D.ID_DIRECCION
                             OFFSET @POSICION ROWS
                             FETCH NEXT 1 ROWS ONLY;
 
-                        IF @CONTADOR % 2 = 0
-                            SET @TIPO_CLIENTE = 'FISICA';
-
-                        IF @CONTADOR % 2 = 0
+                        IF @TIPO_CLIENTE = 'FISICA'
                             SET @NOMBRE = CONCAT(
                                 'Cliente Fisico ',
-                                @CONTADOR
+                                @NUMERO_TIPO
                             );
 
-                        IF @CONTADOR % 2 = 0
-                            SET @RAZON_SOCIAL = 'NO APLICA';
+                        IF @TIPO_CLIENTE = 'FISICA'
+                            SET @RAZON_SOCIAL = @NOMBRE;
 
-                        IF @CONTADOR % 2 <> 0
-                            SET @TIPO_CLIENTE = 'JURIDICA';
+                        IF @TIPO_CLIENTE = 'JURIDICA'
+                            SET @NOMBRE = CONCAT(
+                                'Comercial Cliente ',
+                                @NUMERO_TIPO
+                            );
 
-                        IF @CONTADOR % 2 <> 0
-                            SET @NOMBRE = 'NO APLICA';
-
-                        IF @CONTADOR % 2 <> 0
+                        IF @TIPO_CLIENTE = 'JURIDICA'
                             SET @RAZON_SOCIAL = CONCAT(
                                 'Empresa Cliente ',
-                                @CONTADOR,
+                                @NUMERO_TIPO,
                                 ' S.A.'
                             );
 
