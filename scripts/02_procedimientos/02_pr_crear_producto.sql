@@ -75,27 +75,35 @@ BEGIN
             )
             THROW 51310, 'Ya existe un producto con ese codigo.', 1;
 
+        DECLARE @ID_TIPO_PRODUCTO INT;
+
+        SELECT @ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
+        FROM DBO.TIPOPRODUCTO AS TP
+        WHERE TP.CODIGO = @TIPO_PRODUCTO;
+
         BEGIN TRANSACTION;
 
         INSERT INTO DBO.PRODUCTO (
             CODIGO,
             DESCRIPCION,
-            TIPO_PRODUCTO,
+            ID_TIPO_PRODUCTO,
             EXISTENCIA,
             PRECIO_UNITARIO,
             PORCENTAJE_IMPUESTO,
-            ACTIVO,
-            FECHA_CREACION
+            FECHA_CREACION,
+            FECHA_MODIFICACION,
+            ACTIVO
         )
         VALUES (
             @CODIGO,
             @DESCRIPCION,
-            @TIPO_PRODUCTO,
+            @ID_TIPO_PRODUCTO,
             @EXISTENCIA,
             @PRECIO_UNITARIO,
             @PORCENTAJE_IMPUESTO,
-            @ACTIVO,
-            CONVERT(DATETIME2(0), SYSDATETIME())
+            CONVERT(DATETIME2(0), SYSDATETIME()),
+            CONVERT(DATETIME2(0), SYSDATETIME()),
+            @ACTIVO
         );
 
         COMMIT TRANSACTION;
