@@ -36,10 +36,10 @@ BEGIN
         SET @CORREO = TRIM(@CORREO);
 
         IF NULLIF(@CEDULA, '') IS NULL
-            THROW 50001, 'La cedula es obligatoria.', 1;
+            THROW 51101, 'La cedula es obligatoria.', 1;
 
         IF NULLIF(@TIPO_CLIENTE, '') IS NULL
-            THROW 50002, 'El tipo de cliente es obligatorio.', 1;
+            THROW 51102, 'El tipo de cliente es obligatorio.', 1;
 
         IF
             NOT EXISTS (
@@ -47,26 +47,7 @@ BEGIN
                 FROM DBO.TIPOCLIENTE
                 WHERE CODIGO = @TIPO_CLIENTE
             )
-            THROW 50003, 'El tipo de cliente no existe.', 1;
-
-        IF
-            @TIPO_CLIENTE = 'FISICA'
-            AND NULLIF(@NOMBRE, '') IS NULL
-            THROW 50004, 'El cliente fisico debe tener nombre.', 1;
-
-        IF @TIPO_CLIENTE = 'FISICA'
-            SET @RAZON_SOCIAL = 'NO APLICA';
-
-        IF
-            @TIPO_CLIENTE = 'JURIDICA'
-            AND NULLIF(@RAZON_SOCIAL, '') IS NULL
-            THROW 50005, 'El cliente juridico requiere razon social.', 1;
-
-        IF @TIPO_CLIENTE = 'JURIDICA'
-            SET @NOMBRE = 'NO APLICA';
-
-        IF @ID_DIRECCION IS NULL
-            THROW 50006, 'La direccion es obligatoria.', 1;
+            THROW 51103, 'El tipo de cliente no existe.', 1;
 
         IF
             NOT EXISTS (
@@ -74,17 +55,35 @@ BEGIN
                 FROM DBO.DIRECCION
                 WHERE ID_DIRECCION = @ID_DIRECCION
             )
-            THROW 50007, 'La direccion no existe.', 1;
+            THROW 51104, 'La direccion no existe.', 1;
+
+        IF
+            @TIPO_CLIENTE = 'FISICA'
+            AND NULLIF(@NOMBRE, '') IS NULL
+            THROW 51105, 'El nombre es obligatorio.', 1;
+
+        IF
+            @TIPO_CLIENTE = 'JURIDICA'
+            AND NULLIF(@RAZON_SOCIAL, '') IS NULL
+            THROW 51106, 'La razon social es obligatoria.', 1;
+
+        IF @TIPO_CLIENTE = 'FISICA'
+            SET @RAZON_SOCIAL = ISNULL(
+                NULLIF(@RAZON_SOCIAL, ''),
+                @NOMBRE
+            );
+
+        IF @TIPO_CLIENTE = 'JURIDICA'
+            SET @NOMBRE = ISNULL(
+                NULLIF(@NOMBRE, ''),
+                @RAZON_SOCIAL
+            );
 
         IF NULLIF(@TELEFONO, '') IS NULL
-            THROW 50008, 'El telefono es obligatorio.', 1;
+            THROW 51107, 'El telefono es obligatorio.', 1;
 
-        IF (
-            NULLIF(@CORREO, '') IS NULL
-            OR @CORREO NOT LIKE '%_@_%._%'
-            OR @CORREO LIKE '% %'
-        )
-            THROW 50009, 'El correo no tiene un formato valido.', 1;
+        IF NULLIF(@CORREO, '') IS NULL
+            THROW 51108, 'El correo es obligatorio.', 1;
 
         IF
             EXISTS (
@@ -92,13 +91,19 @@ BEGIN
                 FROM DBO.CLIENTE
                 WHERE CEDULA = @CEDULA
             )
-            THROW 50010, 'La cedula ya pertenece a un cliente.', 1;
+            THROW 51109, 'Ya existe un cliente con esa cedula.', 1;
+
+        DECLARE @ID_TIPO_CLIENTE INT;
+
+        SELECT @ID_TIPO_CLIENTE = TC.ID_TIPO_CLIENTE
+        FROM DBO.TIPOCLIENTE AS TC
+        WHERE TC.CODIGO = @TIPO_CLIENTE;
 
         BEGIN TRANSACTION;
 
         INSERT INTO DBO.CLIENTE (
             CEDULA,
-            TIPO_CLIENTE,
+            ID_TIPO_CLIENTE,
             NOMBRE,
             RAZON_SOCIAL,
             ID_DIRECCION,
@@ -109,7 +114,7 @@ BEGIN
         )
         VALUES (
             @CEDULA,
-            @TIPO_CLIENTE,
+            @ID_TIPO_CLIENTE,
             @NOMBRE,
             @RAZON_SOCIAL,
             @ID_DIRECCION,
