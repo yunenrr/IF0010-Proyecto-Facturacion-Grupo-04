@@ -90,12 +90,37 @@ BEGIN
         DECLARE @IDENTIFICADOR_COMPROBANTE VARCHAR(40);
 
         SET @IDENTIFICADOR_COMPROBANTE = CONCAT(
-            'FAC-',
+            CONVERT(
+                CHAR(8),
+                @FECHA_EMISION,
+                112
+            ),
             REPLACE(
-                CONVERT(VARCHAR(36), NEWID()),
-                '-',
+                CONVERT(
+                    CHAR(8),
+                    @FECHA_EMISION,
+                    108
+                ),
+                ':',
                 ''
+            ),
+            '-',
+            @CODIGO_TIPO_DOCUMENTO
+        );
+
+        IF
+            EXISTS (
+                SELECT 1
+                FROM DBO.FACTURA
+                WHERE
+                    IDENTIFICADOR_COMPROBANTE
+                    = @IDENTIFICADOR_COMPROBANTE
             )
+            THROW 52010, 'El identificador ya existe.', 1;
+
+        SET @OBSERVACIONES = ISNULL(
+            NULLIF(TRIM(@OBSERVACIONES), ''),
+            'SIN OBSERVACIONES'
         );
 
         BEGIN TRANSACTION;
@@ -128,10 +153,7 @@ BEGIN
             0,
             0,
             0,
-            ISNULL(
-                NULLIF(TRIM(@OBSERVACIONES), ''),
-                'SIN OBSERVACIONES'
-            ),
+            @OBSERVACIONES,
             CONVERT(DATETIME2(0), SYSDATETIME()),
             CONVERT(DATETIME2(0), SYSDATETIME())
         );
