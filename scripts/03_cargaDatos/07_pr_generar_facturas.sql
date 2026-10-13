@@ -269,15 +269,42 @@ BEGIN
                     )
                 SELECT
                     CONCAT(
-                        'FAC-',
+                        CONVERT(
+                            CHAR(8),
+                            DATEADD(
+                                SECOND,
+                                -CONVERT(
+                                    INT,
+                                    (
+                                        N.NUMERO
+                                        + @ACTUAL
+                                    ) * 60
+                                ),
+                                @AHORA
+                            ),
+                            112
+                        ),
                         REPLACE(
                             CONVERT(
-                                VARCHAR(36),
-                                NEWID()
+                                CHAR(8),
+                                DATEADD(
+                                    SECOND,
+                                    -CONVERT(
+                                        INT,
+                                        (
+                                            N.NUMERO
+                                            + @ACTUAL
+                                        ) * 60
+                                    ),
+                                    @AHORA
+                                ),
+                                108
                             ),
-                            '-',
+                            ':',
                             ''
-                        )
+                        ),
+                        '-',
+                        T.CODIGO
                     ) AS IDENTIFICADOR_COMPROBANTE,
                     E.CEDULA AS CEDULA_EMPRESA,
                     C.CEDULA AS CEDULA_CLIENTE,
@@ -285,13 +312,13 @@ BEGIN
                     M.CODIGO AS CODIGO_MONEDA,
                     EF.ESTADO AS ESTADO_FACTURA,
                     DATEADD(
-                        DAY,
+                        SECOND,
                         -CONVERT(
                             INT,
                             (
                                 N.NUMERO
                                 + @ACTUAL
-                            ) % 365
+                            ) * 60
                         ),
                         @AHORA
                     ) AS FECHA_EMISION,
