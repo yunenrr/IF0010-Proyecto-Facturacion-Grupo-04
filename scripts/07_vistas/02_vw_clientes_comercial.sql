@@ -45,11 +45,12 @@ LEFT JOIN (
         COUNT(*) AS CANTIDAD_FACTURAS,
         SUM(
             CASE
-                WHEN F.FECHA_EMISION >= DATEADD(
-                    MONTH,
-                    -6,
-                    SYSDATETIME()
-                )
+                WHEN
+                    F.FECHA_EMISION >= DATEADD(
+                        MONTH,
+                        -6,
+                        SYSDATETIME()
+                    )
                     THEN 1
                 ELSE 0
             END
