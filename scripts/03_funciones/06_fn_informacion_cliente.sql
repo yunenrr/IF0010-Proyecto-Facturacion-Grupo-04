@@ -14,7 +14,7 @@ IF
     END
 GO
 
-CREATE FUNCTION DBO.FN_INFORMACION_CLIENTE (
+CREATE FUNCTION DBO.FN_INFORMACION_CLIENTE(
     @CEDULA VARCHAR(20)
 )
 RETURNS TABLE
@@ -26,6 +26,8 @@ RETURN (
         C.NOMBRE,
         C.RAZON_SOCIAL,
         D.SENAS_EXACTAS,
+        C.FECHA_REGISTRO,
+        C.FECHA_ACTUALIZACION,
         CASE
             WHEN
                 IS_MEMBER('ROL_ADMINISTRATIVO') = 1
@@ -51,7 +53,6 @@ RETURN (
                             LEN(C.TELEFONO)
                         )
                     END
-            ELSE NULL
         END AS TELEFONO,
         CASE
             WHEN
@@ -80,10 +81,7 @@ RETURN (
                             )
                         ELSE '***'
                     END
-            ELSE NULL
-        END AS CORREO,
-        C.FECHA_REGISTRO,
-        C.FECHA_ACTUALIZACION
+        END AS CORREO
     FROM DBO.CLIENTE AS C
     INNER JOIN DBO.TIPOCLIENTE AS TC
         ON C.ID_TIPO_CLIENTE = TC.ID_TIPO_CLIENTE
