@@ -51,6 +51,7 @@ LEFT JOIN (
                         -6,
                         SYSDATETIME()
                     )
+                    AND F.FECHA_EMISION <= SYSDATETIME()
                     THEN 1
                 ELSE 0
             END
