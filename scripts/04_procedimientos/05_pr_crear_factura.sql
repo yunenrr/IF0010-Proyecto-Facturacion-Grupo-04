@@ -89,24 +89,12 @@ BEGIN
 
         DECLARE @IDENTIFICADOR_COMPROBANTE VARCHAR(40);
 
-        SET @IDENTIFICADOR_COMPROBANTE = CONCAT(
-            CONVERT(
-                CHAR(8),
+        SET
+            @IDENTIFICADOR_COMPROBANTE
+            = DBO.FN_GENERAR_CLAVE_COMPROBANTE(
                 @FECHA_EMISION,
-                112
-            ),
-            REPLACE(
-                CONVERT(
-                    CHAR(8),
-                    @FECHA_EMISION,
-                    108
-                ),
-                ':',
-                ''
-            ),
-            '-',
-            @CODIGO_TIPO_DOCUMENTO
-        );
+                @CODIGO_TIPO_DOCUMENTO
+            );
 
         IF
             EXISTS (

@@ -268,42 +268,18 @@ BEGIN
                         ID_FACTURA
                     )
                 SELECT
-                    CONCAT(
-                        CONVERT(
-                            CHAR(8),
-                            DATEADD(
-                                SECOND,
-                                -CONVERT(
-                                    INT,
-                                    (
-                                        N.NUMERO
-                                        + @ACTUAL
-                                    ) * 60
-                                ),
-                                @AHORA
+                    DBO.FN_GENERAR_CLAVE_COMPROBANTE(
+                        DATEADD(
+                            SECOND,
+                            -CONVERT(
+                                INT,
+                                (
+                                    N.NUMERO
+                                    + @ACTUAL
+                                ) * 60
                             ),
-                            112
+                            @AHORA
                         ),
-                        REPLACE(
-                            CONVERT(
-                                CHAR(8),
-                                DATEADD(
-                                    SECOND,
-                                    -CONVERT(
-                                        INT,
-                                        (
-                                            N.NUMERO
-                                            + @ACTUAL
-                                        ) * 60
-                                    ),
-                                    @AHORA
-                                ),
-                                108
-                            ),
-                            ':',
-                            ''
-                        ),
-                        '-',
                         T.CODIGO
                     ) AS IDENTIFICADOR_COMPROBANTE,
                     E.CEDULA AS CEDULA_EMPRESA,
