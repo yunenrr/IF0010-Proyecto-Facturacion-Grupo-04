@@ -1,11 +1,12 @@
 USE FACTURACIONSOLUCIONESMAGNIFICAS;
 GO
 
-IF EXISTS (
-    SELECT 1
-    FROM SYS.TRIGGERS
-    WHERE NAME = 'TR_AUD_SERVICIO'
-)
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.TRIGGERS
+        WHERE NAME = 'TR_AUD_SERVICIO'
+    )
     BEGIN
         DROP TRIGGER DBO.TR_AUD_SERVICIO;
     END
@@ -29,13 +30,16 @@ BEGIN
         DESCRIPCION
     )
     SELECT
-        'SERVICIO',
-        CONVERT(VARCHAR(100), COALESCE(I.CODIGO, D.CODIGO)),
+        'SERVICIO' AS TABLA_AFECTADA,
+        CONVERT(
+            VARCHAR(100),
+            COALESCE(I.CODIGO, D.CODIGO)
+        ) AS ID_REGISTRO,
         CASE
             WHEN D.CODIGO IS NULL THEN 'INSERT'
             WHEN I.CODIGO IS NULL THEN 'DELETE'
             ELSE 'UPDATE'
-        END,
+        END AS OPERACION,
         CASE
             WHEN D.CODIGO IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -54,7 +58,7 @@ BEGIN
                 '; ACTIVO=',
                 D.ACTIVO
             )
-        END,
+        END AS VALOR_ANTERIOR,
         CASE
             WHEN I.CODIGO IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -73,10 +77,10 @@ BEGIN
                 '; ACTIVO=',
                 I.ACTIVO
             )
-        END,
-        ORIGINAL_LOGIN(),
-        CONVERT(DATETIME2(0), SYSDATETIME()),
-        'Historial de SERVICIO'
+        END AS VALOR_NUEVO,
+        ORIGINAL_LOGIN() AS USUARIO,
+        CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+        'Historial de SERVICIO' AS DESCRIPCION
     FROM INSERTED AS I
     FULL OUTER JOIN DELETED AS D
         ON I.CODIGO = D.CODIGO;
