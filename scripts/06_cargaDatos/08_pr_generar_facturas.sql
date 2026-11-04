@@ -62,8 +62,15 @@ BEGIN
             THROW 52406, 'No existen estados de factura.', 1;
 
         IF (
-            (SELECT COUNT(*) FROM DBO.PRODUCTO WHERE ACTIVO = 1)
-            + (SELECT COUNT(*) FROM DBO.SERVICIO WHERE ACTIVO = 1)
+            (
+                SELECT COUNT(*)
+                FROM DBO.PRODUCTO
+                WHERE ACTIVO = 1
+            ) + (
+                SELECT COUNT(*)
+                FROM DBO.SERVICIO
+                WHERE ACTIVO = 1
+            )
         ) < 5
             THROW 52407, 'Se necesitan al menos cinco articulos activos.', 1;
 
