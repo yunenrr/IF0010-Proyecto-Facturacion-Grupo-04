@@ -1,0 +1,84 @@
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
+GO
+
+IF EXISTS (
+    SELECT 1
+    FROM SYS.TRIGGERS
+    WHERE NAME = 'TR_AUD_SERVICIO'
+)
+    BEGIN
+        DROP TRIGGER DBO.TR_AUD_SERVICIO;
+    END
+GO
+
+CREATE TRIGGER DBO.TR_AUD_SERVICIO
+ON DBO.SERVICIO
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO DBO.AUDITORIA (
+        TABLA_AFECTADA,
+        ID_REGISTRO,
+        OPERACION,
+        VALOR_ANTERIOR,
+        VALOR_NUEVO,
+        USUARIO,
+        FECHA_HORA,
+        DESCRIPCION
+    )
+    SELECT
+        'SERVICIO',
+        CONVERT(VARCHAR(100), COALESCE(I.CODIGO, D.CODIGO)),
+        CASE
+            WHEN D.CODIGO IS NULL THEN 'INSERT'
+            WHEN I.CODIGO IS NULL THEN 'DELETE'
+            ELSE 'UPDATE'
+        END,
+        CASE
+            WHEN D.CODIGO IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CODIGO=',
+                D.CODIGO,
+                '; DESCRIPCION=',
+                D.DESCRIPCION,
+                '; PRECIO_UNITARIO=',
+                D.PRECIO_UNITARIO,
+                '; PORCENTAJE_IMPUESTO=',
+                D.PORCENTAJE_IMPUESTO,
+                '; FECHA_CREACION=',
+                CONVERT(VARCHAR(19), D.FECHA_CREACION, 126),
+                '; FECHA_MODIFICACION=',
+                CONVERT(VARCHAR(19), D.FECHA_MODIFICACION, 126),
+                '; ACTIVO=',
+                D.ACTIVO
+            )
+        END,
+        CASE
+            WHEN I.CODIGO IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CODIGO=',
+                I.CODIGO,
+                '; DESCRIPCION=',
+                I.DESCRIPCION,
+                '; PRECIO_UNITARIO=',
+                I.PRECIO_UNITARIO,
+                '; PORCENTAJE_IMPUESTO=',
+                I.PORCENTAJE_IMPUESTO,
+                '; FECHA_CREACION=',
+                CONVERT(VARCHAR(19), I.FECHA_CREACION, 126),
+                '; FECHA_MODIFICACION=',
+                CONVERT(VARCHAR(19), I.FECHA_MODIFICACION, 126),
+                '; ACTIVO=',
+                I.ACTIVO
+            )
+        END,
+        ORIGINAL_LOGIN(),
+        CONVERT(DATETIME2(0), SYSDATETIME()),
+        'Historial de SERVICIO'
+    FROM INSERTED AS I
+    FULL OUTER JOIN DELETED AS D
+        ON I.CODIGO = D.CODIGO;
+END;
+GO
