@@ -146,9 +146,10 @@ BEGIN
                         INT,
                         (
                             @ACTUAL
-                            + ROW_NUMBER() OVER (
-                                ORDER BY C.CONTADOR
-                            )
+                            + ROW_NUMBER()
+                                OVER (
+                                    ORDER BY C.CONTADOR
+                                )
                             - 1
                         ) % @CANTIDAD_DIRECCIONES + 1
                     ) AS NUMERO_DIRECCION

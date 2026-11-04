@@ -93,7 +93,7 @@ BEGIN
                 )
                 SELECT TOP (@FALTANTES)
                     C.CODIGO,
-                    CONCAT('Producto de prueba ', C.CONTADOR),
+                    CONCAT('Producto de prueba ', C.CONTADOR) AS DESCRIPCION,
                     TP.ID_TIPO_PRODUCTO,
                     CASE
                         WHEN C.TIPO = 'FISICO'
@@ -115,7 +115,7 @@ BEGIN
                     1 AS ACTIVO
                 FROM CANDIDATOS AS C
                 INNER JOIN DBO.TIPOPRODUCTO AS TP
-                    ON TP.CODIGO = C.TIPO
+                    ON C.TIPO = TP.CODIGO
                 WHERE
                     NOT EXISTS (
                         SELECT 1

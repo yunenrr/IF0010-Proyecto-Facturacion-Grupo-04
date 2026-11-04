@@ -295,7 +295,13 @@ BEGIN
                 BEGIN TRANSACTION;
 
                 WITH NUMEROS AS (
-                    SELECT N.NUMERO
+                    SELECT
+                        N.NUMERO,
+                        DATEADD(
+                            SECOND,
+                            -CONVERT(INT, (N.NUMERO + @ACTUAL) * 60),
+                            @AHORA
+                        ) AS FECHA_EMISION
                     FROM #NUMEROS AS N
                     WHERE N.NUMERO <= @LOTE
                 )
@@ -323,9 +329,9 @@ BEGIN
                     )
                 SELECT
                     CONCAT(
-                        CONVERT(CHAR(8), FE.FECHA_EMISION, 112),
+                        CONVERT(CHAR(8), N.FECHA_EMISION, 112),
                         REPLACE(
-                            CONVERT(CHAR(8), FE.FECHA_EMISION, 108),
+                            CONVERT(CHAR(8), N.FECHA_EMISION, 108),
                             ':',
                             ''
                         ),
@@ -337,7 +343,7 @@ BEGIN
                     T.CODIGO AS CODIGO_TIPO_DOCUMENTO,
                     M.CODIGO AS CODIGO_MONEDA,
                     EF.ESTADO AS ESTADO_FACTURA,
-                    FE.FECHA_EMISION AS FECHA_EMISION,
+                    N.FECHA_EMISION,
                     0 AS SUBTOTAL,
                     0 AS TOTAL_DESCUENTOS,
                     0 AS TOTAL_IMPUESTOS,
@@ -385,15 +391,7 @@ BEGIN
                             + @ACTUAL
                             - 1
                         ) % @CANTIDAD_ESTADOS
-                    ) + 1
-                CROSS APPLY (
-                    SELECT
-                        DATEADD(
-                            SECOND,
-                            -CONVERT(INT, (N.NUMERO + @ACTUAL) * 60),
-                            @AHORA
-                        ) AS FECHA_EMISION
-                ) AS FE;
+                    ) + 1;
 
                 WITH DETALLES_BASE AS (
                     SELECT
