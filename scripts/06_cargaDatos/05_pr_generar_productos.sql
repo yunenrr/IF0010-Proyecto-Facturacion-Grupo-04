@@ -15,15 +15,15 @@ IF
 GO
 
 CREATE PROCEDURE DBO.PR_GENERAR_PRODUCTOS
-    @TOTAL_OBJETIVO INT = 1000
+    @TOTAL_OBJETIVO INT = 500
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
     BEGIN TRY
-        IF @TOTAL_OBJETIVO IS NULL OR @TOTAL_OBJETIVO < 1000
-            THROW 51401, 'Se deben generar al menos 1000 productos.', 1;
+        IF @TOTAL_OBJETIVO IS NULL OR @TOTAL_OBJETIVO < 500
+            THROW 51401, 'Se deben generar al menos 500 productos.', 1;
 
         IF (
             NOT EXISTS (
@@ -46,7 +46,7 @@ BEGIN
         DECLARE @CODIGO VARCHAR(30);
         DECLARE @DESCRIPCION VARCHAR(200);
         DECLARE @TIPO VARCHAR(10);
-        DECLARE @EXISTENCIA INT;
+        DECLARE @CANTIDAD_DISPONIBLE INT;
         DECLARE @PRECIO DECIMAL(18, 2);
         DECLARE @IMPUESTO DECIMAL(5, 2);
 
@@ -73,7 +73,7 @@ BEGIN
                             ELSE 'FISICO'
                         END;
 
-                        SET @EXISTENCIA = CASE
+                        SET @CANTIDAD_DISPONIBLE = CASE
                             WHEN @TIPO = 'FISICO'
                                 THEN 10 + @CONTADOR % 491
                             ELSE 0
@@ -100,7 +100,7 @@ BEGIN
                             @CODIGO = @CODIGO,
                             @DESCRIPCION = @DESCRIPCION,
                             @TIPO_PRODUCTO = @TIPO,
-                            @EXISTENCIA = @EXISTENCIA,
+                            @CANTIDAD_DISPONIBLE = @CANTIDAD_DISPONIBLE,
                             @PRECIO_UNITARIO = @PRECIO,
                             @PORCENTAJE_IMPUESTO = @IMPUESTO,
                             @ACTIVO = 1;
@@ -123,7 +123,7 @@ END;
 GO
 
 EXEC DBO.PR_GENERAR_PRODUCTOS
-    @TOTAL_OBJETIVO = 1000;
+    @TOTAL_OBJETIVO = 500;
 GO
 
 DROP PROCEDURE DBO.PR_GENERAR_PRODUCTOS;
