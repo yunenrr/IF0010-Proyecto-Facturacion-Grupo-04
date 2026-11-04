@@ -1,22 +1,36 @@
 USE FACTURACIONSOLUCIONESMAGNIFICAS;
 GO
 
-IF EXISTS (
-    SELECT 1
-    FROM SYS.TRIGGERS
-    WHERE NAME = 'TR_AUD_SERVICIO'
-)
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.TRIGGERS
+        WHERE NAME = 'TR_AUD_CLIENTEFISICO'
+    )
     BEGIN
-        DROP TRIGGER DBO.TR_AUD_SERVICIO;
+        DROP TRIGGER DBO.TR_AUD_CLIENTEFISICO;
     END
 GO
 
-CREATE TRIGGER DBO.TR_AUD_SERVICIO
-ON DBO.SERVICIO
+CREATE TRIGGER DBO.TR_AUD_CLIENTEFISICO
+ON DBO.CLIENTEFISICO
 AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    IF
+        EXISTS (
+            SELECT 1
+            FROM INSERTED AS I
+            INNER JOIN DBO.CLIENTE AS C WITH (UPDLOCK, HOLDLOCK)
+                ON I.CEDULA_CLIENTE = C.CEDULA
+            INNER JOIN DBO.CLIENTEJURIDICO AS O
+                ON I.CEDULA_CLIENTE = O.CEDULA_CLIENTE
+        )
+        THROW 53101,
+            'Una cedula no puede ser fisica y juridica a la vez.',
+            1;
 
     INSERT INTO DBO.AUDITORIA (
         TABLA_AFECTADA,
@@ -29,56 +43,44 @@ BEGIN
         DESCRIPCION
     )
     SELECT
-        'SERVICIO',
-        CONVERT(VARCHAR(100), COALESCE(I.CODIGO, D.CODIGO)),
+        'CLIENTEFISICO',
+        CONVERT(VARCHAR(100), COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)),
         CASE
-            WHEN D.CODIGO IS NULL THEN 'INSERT'
-            WHEN I.CODIGO IS NULL THEN 'DELETE'
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'INSERT'
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'DELETE'
             ELSE 'UPDATE'
         END,
         CASE
-            WHEN D.CODIGO IS NULL THEN 'NO APLICA'
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
-                'CODIGO=',
-                D.CODIGO,
-                '; DESCRIPCION=',
-                D.DESCRIPCION,
-                '; PRECIO_UNITARIO=',
-                D.PRECIO_UNITARIO,
-                '; PORCENTAJE_IMPUESTO=',
-                D.PORCENTAJE_IMPUESTO,
-                '; FECHA_CREACION=',
-                CONVERT(VARCHAR(19), D.FECHA_CREACION, 126),
-                '; FECHA_MODIFICACION=',
-                CONVERT(VARCHAR(19), D.FECHA_MODIFICACION, 126),
-                '; ACTIVO=',
-                D.ACTIVO
+                'CEDULA_CLIENTE=',
+                D.CEDULA_CLIENTE,
+                '; NOMBRE=',
+                D.NOMBRE,
+                '; PRIMER_APELLIDO=',
+                D.PRIMER_APELLIDO,
+                '; SEGUNDO_APELLIDO=',
+                D.SEGUNDO_APELLIDO
             )
         END,
         CASE
-            WHEN I.CODIGO IS NULL THEN 'NO APLICA'
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
-                'CODIGO=',
-                I.CODIGO,
-                '; DESCRIPCION=',
-                I.DESCRIPCION,
-                '; PRECIO_UNITARIO=',
-                I.PRECIO_UNITARIO,
-                '; PORCENTAJE_IMPUESTO=',
-                I.PORCENTAJE_IMPUESTO,
-                '; FECHA_CREACION=',
-                CONVERT(VARCHAR(19), I.FECHA_CREACION, 126),
-                '; FECHA_MODIFICACION=',
-                CONVERT(VARCHAR(19), I.FECHA_MODIFICACION, 126),
-                '; ACTIVO=',
-                I.ACTIVO
+                'CEDULA_CLIENTE=',
+                I.CEDULA_CLIENTE,
+                '; NOMBRE=',
+                I.NOMBRE,
+                '; PRIMER_APELLIDO=',
+                I.PRIMER_APELLIDO,
+                '; SEGUNDO_APELLIDO=',
+                I.SEGUNDO_APELLIDO
             )
         END,
         ORIGINAL_LOGIN(),
         CONVERT(DATETIME2(0), SYSDATETIME()),
-        'Historial de SERVICIO'
+        'Historial de CLIENTEFISICO'
     FROM INSERTED AS I
     FULL OUTER JOIN DELETED AS D
-        ON I.CODIGO = D.CODIGO;
+        ON I.CEDULA_CLIENTE = D.CEDULA_CLIENTE;
 END;
 GO
