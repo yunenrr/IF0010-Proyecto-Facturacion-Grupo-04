@@ -77,22 +77,6 @@ BEGIN
                 WHERE EXISTENTE.ESTADO = DATOS.ESTADO
             );
 
-        INSERT INTO DBO.TIPOCLIENTE (CODIGO, DESCRIPCION)
-        SELECT
-            DATOS.CODIGO,
-            DATOS.DESCRIPCION
-        FROM (
-            VALUES
-            ('FISICA', 'Persona fisica'),
-            ('JURIDICA', 'Persona juridica')
-        ) AS DATOS(CODIGO, DESCRIPCION)
-        WHERE
-            NOT EXISTS (
-                SELECT 1
-                FROM DBO.TIPOCLIENTE AS EXISTENTE
-                WHERE EXISTENTE.CODIGO = DATOS.CODIGO
-            );
-
         INSERT INTO DBO.TIPOPRODUCTO (CODIGO, DESCRIPCION)
         SELECT
             DATOS.CODIGO,
