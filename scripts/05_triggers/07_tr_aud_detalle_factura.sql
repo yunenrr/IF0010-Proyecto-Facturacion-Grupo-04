@@ -26,14 +26,14 @@ BEGIN
         )
         BEGIN
             INSERT INTO DBO.AUDITORIA (
-            TABLA_AFECTADA,
-            ID_REGISTRO,
-            OPERACION,
-            VALOR_ANTERIOR,
-            VALOR_NUEVO,
-            USUARIO,
-            FECHA_HORA,
-            DESCRIPCION
+                TABLA_AFECTADA,
+                ID_REGISTRO,
+                OPERACION,
+                VALOR_ANTERIOR,
+                VALOR_NUEVO,
+                USUARIO,
+                FECHA_HORA,
+                DESCRIPCION
             )
             SELECT
                 'DETALLEFACTURA' AS TABLA_AFECTADA,
