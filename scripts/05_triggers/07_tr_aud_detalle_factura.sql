@@ -1,11 +1,12 @@
 USE FACTURACIONSOLUCIONESMAGNIFICAS;
 GO
 
-IF EXISTS (
-    SELECT 1
-    FROM SYS.TRIGGERS
-    WHERE NAME = 'TR_AUD_DETALLEFACTURA'
-)
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.TRIGGERS
+        WHERE NAME = 'TR_AUD_DETALLEFACTURA'
+    )
     BEGIN
         DROP TRIGGER DBO.TR_AUD_DETALLEFACTURA;
     END
@@ -29,17 +30,17 @@ BEGIN
         DESCRIPCION
     )
     SELECT
-        'DETALLEFACTURA',
+        'DETALLEFACTURA' AS TABLA_AFECTADA,
         CONCAT(
             COALESCE(I.ID_FACTURA, D.ID_FACTURA),
             '-',
             COALESCE(I.NUMERO_LINEA, D.NUMERO_LINEA)
-        ),
+        ) AS ID_REGISTRO,
         CASE
             WHEN D.ID_FACTURA IS NULL THEN 'INSERT'
             WHEN I.ID_FACTURA IS NULL THEN 'DELETE'
             ELSE 'UPDATE'
-        END,
+        END AS OPERACION,
         CASE
             WHEN D.ID_FACTURA IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -64,7 +65,7 @@ BEGIN
                 '; TOTAL_LINEA=',
                 D.TOTAL_LINEA
             )
-        END,
+        END AS VALOR_ANTERIOR,
         CASE
             WHEN I.ID_FACTURA IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -89,10 +90,10 @@ BEGIN
                 '; TOTAL_LINEA=',
                 I.TOTAL_LINEA
             )
-        END,
-        ORIGINAL_LOGIN(),
-        CONVERT(DATETIME2(0), SYSDATETIME()),
-        'Historial de DETALLEFACTURA'
+        END AS VALOR_NUEVO,
+        ORIGINAL_LOGIN() AS USUARIO,
+        CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+        'Historial de DETALLEFACTURA' AS DESCRIPCION
     FROM INSERTED AS I
     FULL OUTER JOIN DELETED AS D
         ON I.ID_FACTURA = D.ID_FACTURA
