@@ -28,9 +28,7 @@ BEGIN
             INNER JOIN DBO.CLIENTEJURIDICO AS O
                 ON I.CEDULA_CLIENTE = O.CEDULA_CLIENTE
         )
-        THROW 53101,
-            'Una cedula no puede ser fisica y juridica a la vez.',
-            1;
+        THROW 53101, 'Una cedula no puede ser fisica y juridica a la vez.', 1;
 
     INSERT INTO DBO.AUDITORIA (
         TABLA_AFECTADA,
@@ -43,13 +41,16 @@ BEGIN
         DESCRIPCION
     )
     SELECT
-        'CLIENTEFISICO',
-        CONVERT(VARCHAR(100), COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)),
+        'CLIENTEFISICO' AS TABLA_AFECTADA,
+        CONVERT(
+            VARCHAR(100),
+            COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)
+        ) AS ID_REGISTRO,
         CASE
             WHEN D.CEDULA_CLIENTE IS NULL THEN 'INSERT'
             WHEN I.CEDULA_CLIENTE IS NULL THEN 'DELETE'
             ELSE 'UPDATE'
-        END,
+        END AS OPERACION,
         CASE
             WHEN D.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -62,7 +63,7 @@ BEGIN
                 '; SEGUNDO_APELLIDO=',
                 D.SEGUNDO_APELLIDO
             )
-        END,
+        END AS VALOR_ANTERIOR,
         CASE
             WHEN I.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
             ELSE CONCAT(
@@ -75,10 +76,10 @@ BEGIN
                 '; SEGUNDO_APELLIDO=',
                 I.SEGUNDO_APELLIDO
             )
-        END,
-        ORIGINAL_LOGIN(),
-        CONVERT(DATETIME2(0), SYSDATETIME()),
-        'Historial de CLIENTEFISICO'
+        END AS VALOR_NUEVO,
+        ORIGINAL_LOGIN() AS USUARIO,
+        CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+        'Historial de CLIENTEFISICO' AS DESCRIPCION
     FROM INSERTED AS I
     FULL OUTER JOIN DELETED AS D
         ON I.CEDULA_CLIENTE = D.CEDULA_CLIENTE;
