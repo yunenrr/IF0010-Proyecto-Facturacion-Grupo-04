@@ -25,65 +25,80 @@ BEGIN
         IF @TOTAL_OBJETIVO IS NULL OR @TOTAL_OBJETIVO < 500
             THROW 51601, 'Se deben generar al menos 500 servicios.', 1;
 
-        BEGIN TRANSACTION;
-
         DECLARE @ACTUAL BIGINT;
-        DECLARE @CONTADOR INT = 1;
-        DECLARE @CODIGO VARCHAR(30);
-        DECLARE @DESCRIPCION VARCHAR(200);
-        DECLARE @PRECIO DECIMAL(18, 2);
-        DECLARE @IMPUESTO DECIMAL(5, 2);
+        DECLARE @FALTANTES INT;
+        DECLARE @AHORA DATETIME2(0);
+
+        BEGIN TRANSACTION;
 
         SELECT @ACTUAL = COUNT_BIG(*)
         FROM DBO.SERVICIO;
 
-        WHILE @ACTUAL < @TOTAL_OBJETIVO
+        IF @ACTUAL < @TOTAL_OBJETIVO
             BEGIN
-                SET @CODIGO = CONCAT(
-                    'SERV-GENERADO-',
-                    @CONTADOR
+                SET @FALTANTES = CONVERT(
+                    INT,
+                    @TOTAL_OBJETIVO - @ACTUAL
                 );
 
-                IF
+                SET @AHORA = CONVERT(DATETIME2(0), SYSDATETIME());
+
+                WITH NUMEROS AS (
+                    SELECT TOP (@TOTAL_OBJETIVO + @ACTUAL)
+                        ROW_NUMBER() OVER (
+                            ORDER BY (SELECT NULL)
+                        ) AS CONTADOR
+                    FROM SYS.ALL_OBJECTS AS A
+                    CROSS JOIN SYS.ALL_OBJECTS AS B
+                )
+
+                INSERT INTO DBO.SERVICIO (
+                    CODIGO,
+                    DESCRIPCION,
+                    PRECIO_UNITARIO,
+                    PORCENTAJE_IMPUESTO,
+                    FECHA_CREACION,
+                    FECHA_MODIFICACION,
+                    ACTIVO
+                )
+                SELECT TOP (@FALTANTES)
+                    CONCAT(
+                        'SERV-GENERADO-',
+                        N.CONTADOR
+                    ) AS CODIGO,
+                    CONCAT(
+                        CASE N.CONTADOR % 4
+                            WHEN 0 THEN 'Mantenimiento '
+                            WHEN 1 THEN 'Instalacion '
+                            WHEN 2 THEN 'Asesoria '
+                            ELSE 'Soporte tecnico '
+                        END,
+                        N.CONTADOR
+                    ) AS DESCRIPCION,
+                    CONVERT(
+                        DECIMAL(18, 2),
+                        5000 + (N.CONTADOR % 200) * 250
+                    ) AS PRECIO_UNITARIO,
+                    CASE N.CONTADOR % 4
+                        WHEN 0 THEN 0
+                        WHEN 1 THEN 1
+                        WHEN 2 THEN 4
+                        ELSE 13
+                    END AS PORCENTAJE_IMPUESTO,
+                    @AHORA AS FECHA_CREACION,
+                    @AHORA AS FECHA_MODIFICACION,
+                    1 AS ACTIVO
+                FROM NUMEROS AS N
+                WHERE
                     NOT EXISTS (
                         SELECT 1
-                        FROM DBO.SERVICIO
-                        WHERE CODIGO = @CODIGO
+                        FROM DBO.SERVICIO AS S
+                        WHERE S.CODIGO = CONCAT(
+                            'SERV-GENERADO-',
+                            N.CONTADOR
+                        )
                     )
-                    BEGIN
-                        SET @DESCRIPCION = CONCAT(
-                            CASE @CONTADOR % 4
-                                WHEN 0 THEN 'Mantenimiento '
-                                WHEN 1 THEN 'Instalacion '
-                                WHEN 2 THEN 'Asesoria '
-                                ELSE 'Soporte tecnico '
-                            END,
-                            @CONTADOR
-                        );
-
-                        SET @PRECIO = CONVERT(
-                            DECIMAL(18, 2),
-                            5000 + (@CONTADOR % 200) * 250
-                        );
-
-                        SET @IMPUESTO = CASE @CONTADOR % 4
-                            WHEN 0 THEN 0
-                            WHEN 1 THEN 1
-                            WHEN 2 THEN 4
-                            ELSE 13
-                        END;
-
-                        EXEC DBO.PR_CREAR_SERVICIO
-                            @CODIGO = @CODIGO,
-                            @DESCRIPCION = @DESCRIPCION,
-                            @PRECIO_UNITARIO = @PRECIO,
-                            @PORCENTAJE_IMPUESTO = @IMPUESTO,
-                            @ACTIVO = 1;
-
-                        SET @ACTUAL = @ACTUAL + 1;
-                    END;
-
-                SET @CONTADOR = @CONTADOR + 1;
+                ORDER BY N.CONTADOR;
             END;
 
         COMMIT TRANSACTION;

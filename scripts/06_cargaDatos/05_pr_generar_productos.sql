@@ -39,76 +39,90 @@ BEGIN
         )
             THROW 51402, 'Primero cargue los tipos de producto.', 1;
 
-        BEGIN TRANSACTION;
-
         DECLARE @ACTUAL BIGINT;
-        DECLARE @CONTADOR INT = 1;
-        DECLARE @CODIGO VARCHAR(30);
-        DECLARE @DESCRIPCION VARCHAR(200);
-        DECLARE @TIPO VARCHAR(10);
-        DECLARE @CANTIDAD_DISPONIBLE INT;
-        DECLARE @PRECIO DECIMAL(18, 2);
-        DECLARE @IMPUESTO DECIMAL(5, 2);
+        DECLARE @FALTANTES INT;
+        DECLARE @AHORA DATETIME2(0);
+
+        BEGIN TRANSACTION;
 
         SELECT @ACTUAL = COUNT_BIG(*)
         FROM DBO.PRODUCTO;
 
-        WHILE @ACTUAL < @TOTAL_OBJETIVO
+        IF @ACTUAL < @TOTAL_OBJETIVO
             BEGIN
-                SET @CODIGO = CONCAT(
-                    'PROD-GENERADO-',
-                    @CONTADOR
+                SET @FALTANTES = CONVERT(
+                    INT,
+                    @TOTAL_OBJETIVO - @ACTUAL
                 );
 
-                IF
+                SET @AHORA = CONVERT(DATETIME2(0), SYSDATETIME());
+
+                WITH NUMEROS AS (
+                    SELECT TOP (@TOTAL_OBJETIVO + @ACTUAL)
+                        ROW_NUMBER() OVER (
+                            ORDER BY (SELECT NULL)
+                        ) AS CONTADOR
+                    FROM SYS.ALL_OBJECTS AS A
+                    CROSS JOIN SYS.ALL_OBJECTS AS B
+                ),
+
+                CANDIDATOS AS (
+                    SELECT
+                        N.CONTADOR,
+                        CONCAT(
+                            'PROD-GENERADO-',
+                            N.CONTADOR
+                        ) AS CODIGO,
+                        CASE
+                            WHEN N.CONTADOR % 2 = 0 THEN 'DIGITAL'
+                            ELSE 'FISICO'
+                        END AS TIPO
+                    FROM NUMEROS AS N
+                )
+
+                INSERT INTO DBO.PRODUCTO (
+                    CODIGO,
+                    DESCRIPCION,
+                    ID_TIPO_PRODUCTO,
+                    CANTIDAD_DISPONIBLE,
+                    PRECIO_UNITARIO,
+                    PORCENTAJE_IMPUESTO,
+                    FECHA_CREACION,
+                    FECHA_MODIFICACION,
+                    ACTIVO
+                )
+                SELECT TOP (@FALTANTES)
+                    C.CODIGO,
+                    CONCAT('Producto de prueba ', C.CONTADOR),
+                    TP.ID_TIPO_PRODUCTO,
+                    CASE
+                        WHEN C.TIPO = 'FISICO'
+                            THEN 10 + C.CONTADOR % 491
+                        ELSE 0
+                    END AS CANTIDAD_DISPONIBLE,
+                    CONVERT(
+                        DECIMAL(18, 2),
+                        100 + (C.CONTADOR % 1000) * 25.50
+                    ) AS PRECIO_UNITARIO,
+                    CASE C.CONTADOR % 4
+                        WHEN 0 THEN 0
+                        WHEN 1 THEN 1
+                        WHEN 2 THEN 4
+                        ELSE 13
+                    END AS PORCENTAJE_IMPUESTO,
+                    @AHORA AS FECHA_CREACION,
+                    @AHORA AS FECHA_MODIFICACION,
+                    1 AS ACTIVO
+                FROM CANDIDATOS AS C
+                INNER JOIN DBO.TIPOPRODUCTO AS TP
+                    ON TP.CODIGO = C.TIPO
+                WHERE
                     NOT EXISTS (
                         SELECT 1
-                        FROM DBO.PRODUCTO
-                        WHERE CODIGO = @CODIGO
+                        FROM DBO.PRODUCTO AS P
+                        WHERE P.CODIGO = C.CODIGO
                     )
-                    BEGIN
-                        SET @TIPO = CASE
-                            WHEN @CONTADOR % 2 = 0
-                                THEN 'DIGITAL'
-                            ELSE 'FISICO'
-                        END;
-
-                        SET @CANTIDAD_DISPONIBLE = CASE
-                            WHEN @TIPO = 'FISICO'
-                                THEN 10 + @CONTADOR % 491
-                            ELSE 0
-                        END;
-
-                        SET @DESCRIPCION = CONCAT(
-                            'Producto de prueba ',
-                            @CONTADOR
-                        );
-
-                        SET @PRECIO = CONVERT(
-                            DECIMAL(18, 2),
-                            100 + (@CONTADOR % 1000) * 25.50
-                        );
-
-                        SET @IMPUESTO = CASE @CONTADOR % 4
-                            WHEN 0 THEN 0
-                            WHEN 1 THEN 1
-                            WHEN 2 THEN 4
-                            ELSE 13
-                        END;
-
-                        EXEC DBO.PR_CREAR_PRODUCTO
-                            @CODIGO = @CODIGO,
-                            @DESCRIPCION = @DESCRIPCION,
-                            @TIPO_PRODUCTO = @TIPO,
-                            @CANTIDAD_DISPONIBLE = @CANTIDAD_DISPONIBLE,
-                            @PRECIO_UNITARIO = @PRECIO,
-                            @PORCENTAJE_IMPUESTO = @IMPUESTO,
-                            @ACTIVO = 1;
-
-                        SET @ACTUAL = @ACTUAL + 1;
-                    END;
-
-                SET @CONTADOR = @CONTADOR + 1;
+                ORDER BY C.CONTADOR;
             END;
 
         COMMIT TRANSACTION;

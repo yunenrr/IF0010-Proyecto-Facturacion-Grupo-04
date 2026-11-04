@@ -32,187 +32,205 @@ BEGIN
             )
             THROW 50023, 'Primero genere las direcciones.', 1;
 
-        BEGIN TRANSACTION;
-
         DECLARE @ACTUAL BIGINT;
-        DECLARE @CONTADOR INT = 1;
-        DECLARE @NUMERO_TIPO INT;
-        DECLARE @PROVINCIA INT;
-        DECLARE @SEGUNDO_GRUPO INT;
-        DECLARE @TERCER_GRUPO INT;
+        DECLARE @FALTANTES INT;
         DECLARE @CANTIDAD_DIRECCIONES INT;
-        DECLARE @POSICION INT;
-        DECLARE @CEDULA VARCHAR(20);
-        DECLARE @TIPO_CLIENTE VARCHAR(10);
-        DECLARE @NOMBRE VARCHAR(150);
-        DECLARE @RAZON_SOCIAL VARCHAR(150);
-        DECLARE @PRIMER_APELLIDO VARCHAR(100);
-        DECLARE @SEGUNDO_APELLIDO VARCHAR(100);
-        DECLARE @NOMBRE_COMERCIAL VARCHAR(150);
-        DECLARE @ID_DIRECCION INT;
-        DECLARE @TELEFONO VARCHAR(20);
-        DECLARE @CORREO VARCHAR(100);
+        DECLARE @AHORA DATETIME2(0);
+
+        BEGIN TRANSACTION;
 
         SELECT @ACTUAL = COUNT_BIG(*)
         FROM DBO.CLIENTE;
 
-        SELECT @CANTIDAD_DIRECCIONES = COUNT(*)
-        FROM DBO.DIRECCION;
-
-        WHILE @ACTUAL < @TOTAL_OBJETIVO
+        IF @ACTUAL < @TOTAL_OBJETIVO
             BEGIN
-                SET @NUMERO_TIPO = (
-                    @CONTADOR + 1
-                ) / 2;
+                SET @FALTANTES = CONVERT(
+                    INT,
+                    @TOTAL_OBJETIVO - @ACTUAL
+                );
 
-                IF @CONTADOR % 2 = 0
-                    SET @TIPO_CLIENTE = 'FISICA';
+                SET @AHORA = CONVERT(DATETIME2(0), SYSDATETIME());
 
-                IF @CONTADOR % 2 <> 0
-                    SET @TIPO_CLIENTE = 'JURIDICA';
+                CREATE TABLE #DIRECCIONES (
+                    NUMERO INT NOT NULL PRIMARY KEY,
+                    ID_DIRECCION INT NOT NULL
+                );
 
-                IF @TIPO_CLIENTE = 'FISICA'
-                    SET @PROVINCIA = (
-                        (@NUMERO_TIPO - 1) % 7
-                    ) + 1;
+                INSERT INTO #DIRECCIONES (
+                    NUMERO,
+                    ID_DIRECCION
+                )
+                SELECT
+                    ROW_NUMBER() OVER (
+                        ORDER BY D.ID_DIRECCION
+                    ) AS NUMERO,
+                    D.ID_DIRECCION
+                FROM DBO.DIRECCION AS D;
 
-                IF @TIPO_CLIENTE = 'FISICA'
-                    SET @SEGUNDO_GRUPO = 1000 + (
-                        (@NUMERO_TIPO - 1) / 9999
-                    );
+                SELECT @CANTIDAD_DIRECCIONES = COUNT(*)
+                FROM #DIRECCIONES;
 
-                IF @TIPO_CLIENTE = 'FISICA'
-                    SET @TERCER_GRUPO = (
-                        (@NUMERO_TIPO - 1) % 9999
-                    ) + 1;
+                CREATE TABLE #NUEVOS (
+                    CONTADOR INT NOT NULL PRIMARY KEY,
+                    CEDULA VARCHAR(20) NOT NULL UNIQUE,
+                    NUMERO_TIPO INT NOT NULL,
+                    NUMERO_DIRECCION INT NOT NULL
+                );
 
-                IF @TIPO_CLIENTE = 'FISICA'
-                    SET @CEDULA = CONCAT(
-                        @PROVINCIA,
-                        '-',
-                        RIGHT(
-                            '0000'
-                            + CONVERT(
-                                VARCHAR(4),
-                                @SEGUNDO_GRUPO
-                            ),
-                            4
-                        ),
-                        '-',
-                        RIGHT(
-                            '0000'
-                            + CONVERT(
-                                VARCHAR(4),
-                                @TERCER_GRUPO
-                            ),
-                            4
-                        )
-                    );
+                WITH NUMEROS AS (
+                    SELECT TOP (@TOTAL_OBJETIVO + @ACTUAL)
+                        ROW_NUMBER() OVER (
+                            ORDER BY (SELECT NULL)
+                        ) AS CONTADOR
+                    FROM SYS.ALL_OBJECTS AS A
+                    CROSS JOIN SYS.ALL_OBJECTS AS B
+                ),
 
-                IF @TIPO_CLIENTE = 'JURIDICA'
-                    SET @CEDULA = CONCAT(
-                        '3-101-',
-                        RIGHT(
-                            '000000'
-                            + CONVERT(
-                                VARCHAR(6),
-                                @NUMERO_TIPO
-                            ),
-                            6
-                        )
-                    );
+                CANDIDATOS AS (
+                    SELECT
+                        N.CONTADOR,
+                        (N.CONTADOR + 1) / 2 AS NUMERO_TIPO,
+                        CASE
+                            WHEN N.CONTADOR % 2 = 0
+                                THEN CONCAT(
+                                    (N.NUMERO_TIPO - 1) % 7 + 1,
+                                    '-',
+                                    RIGHT(
+                                        '0000' + CONVERT(
+                                            VARCHAR(4),
+                                            1000 + (
+                                                N.NUMERO_TIPO - 1
+                                            ) / 9999
+                                        ),
+                                        4
+                                    ),
+                                    '-',
+                                    RIGHT(
+                                        '0000' + CONVERT(
+                                            VARCHAR(4),
+                                            (N.NUMERO_TIPO - 1) % 9999 + 1
+                                        ),
+                                        4
+                                    )
+                                )
+                            ELSE CONCAT(
+                                '3-101-',
+                                RIGHT(
+                                    '000000' + CONVERT(
+                                        VARCHAR(6),
+                                        N.NUMERO_TIPO
+                                    ),
+                                    6
+                                )
+                            )
+                        END AS CEDULA
+                    FROM (
+                        SELECT
+                            NUM.CONTADOR,
+                            (NUM.CONTADOR + 1) / 2 AS NUMERO_TIPO
+                        FROM NUMEROS AS NUM
+                    ) AS N
+                )
 
-                IF
+                INSERT INTO #NUEVOS (
+                    CONTADOR,
+                    CEDULA,
+                    NUMERO_TIPO,
+                    NUMERO_DIRECCION
+                )
+                SELECT TOP (@FALTANTES)
+                    C.CONTADOR,
+                    C.CEDULA,
+                    C.NUMERO_TIPO,
+                    CONVERT(
+                        INT,
+                        (
+                            @ACTUAL
+                            + ROW_NUMBER() OVER (
+                                ORDER BY C.CONTADOR
+                            )
+                            - 1
+                        ) % @CANTIDAD_DIRECCIONES + 1
+                    ) AS NUMERO_DIRECCION
+                FROM CANDIDATOS AS C
+                WHERE
                     NOT EXISTS (
                         SELECT 1
-                        FROM DBO.CLIENTE
-                        WHERE CEDULA = @CEDULA
+                        FROM DBO.CLIENTE AS EXISTENTE
+                        WHERE EXISTENTE.CEDULA = C.CEDULA
                     )
-                    BEGIN
-                        SET @POSICION = CONVERT(
-                            INT,
-                            @ACTUAL % @CANTIDAD_DIRECCIONES
-                        );
+                ORDER BY C.CONTADOR;
 
-                        SELECT @ID_DIRECCION = D.ID_DIRECCION
-                        FROM DBO.DIRECCION AS D
-                        ORDER BY
-                            D.ID_DIRECCION
-                            OFFSET @POSICION ROWS
-                            FETCH NEXT 1 ROWS ONLY;
+                INSERT INTO DBO.CLIENTE (
+                    CEDULA,
+                    ID_DIRECCION,
+                    TELEFONO,
+                    CORREO,
+                    FECHA_REGISTRO,
+                    FECHA_ACTUALIZACION
+                )
+                SELECT
+                    N.CEDULA,
+                    D.ID_DIRECCION,
+                    CONCAT(
+                        '8',
+                        RIGHT(
+                            '0000000' + CONVERT(
+                                VARCHAR(7),
+                                N.CONTADOR % 10000000
+                            ),
+                            7
+                        )
+                    ) AS TELEFONO,
+                    CONCAT(
+                        'cliente',
+                        N.CONTADOR,
+                        '@correo.com'
+                    ) AS CORREO,
+                    @AHORA AS FECHA_REGISTRO,
+                    @AHORA AS FECHA_ACTUALIZACION
+                FROM #NUEVOS AS N
+                INNER JOIN #DIRECCIONES AS D
+                    ON N.NUMERO_DIRECCION = D.NUMERO;
 
-                        SET @NOMBRE = NULL;
-                        SET @RAZON_SOCIAL = NULL;
-                        SET @PRIMER_APELLIDO = NULL;
-                        SET @SEGUNDO_APELLIDO = NULL;
-                        SET @NOMBRE_COMERCIAL = NULL;
+                INSERT INTO DBO.CLIENTEFISICO (
+                    CEDULA_CLIENTE,
+                    NOMBRE,
+                    PRIMER_APELLIDO,
+                    SEGUNDO_APELLIDO
+                )
+                SELECT
+                    N.CEDULA AS CEDULA_CLIENTE,
+                    CONCAT('Nombre ', N.NUMERO_TIPO) AS NOMBRE,
+                    CONCAT(
+                        'ApellidoP ',
+                        N.NUMERO_TIPO
+                    ) AS PRIMER_APELLIDO,
+                    CONCAT(
+                        'ApellidoS ',
+                        N.NUMERO_TIPO
+                    ) AS SEGUNDO_APELLIDO
+                FROM #NUEVOS AS N
+                WHERE N.CONTADOR % 2 = 0;
 
-                        IF @TIPO_CLIENTE = 'FISICA'
-                            BEGIN
-                                SET @NOMBRE = CONCAT(
-                                    'Nombre ',
-                                    @NUMERO_TIPO
-                                );
-
-                                SET @PRIMER_APELLIDO = CONCAT(
-                                    'ApellidoP ',
-                                    @NUMERO_TIPO
-                                );
-
-                                SET @SEGUNDO_APELLIDO = CONCAT(
-                                    'ApellidoS ',
-                                    @NUMERO_TIPO
-                                );
-                            END;
-
-                        IF @TIPO_CLIENTE = 'JURIDICA'
-                            BEGIN
-                                SET @RAZON_SOCIAL = CONCAT(
-                                    'Empresa Cliente ',
-                                    @NUMERO_TIPO,
-                                    ' S.A.'
-                                );
-
-                                SET @NOMBRE_COMERCIAL = CONCAT(
-                                    'Comercial Cliente ',
-                                    @NUMERO_TIPO
-                                );
-                            END;
-
-                        SET @TELEFONO = CONCAT(
-                            '8',
-                            RIGHT(
-                                '0000000'
-                                + CONVERT(
-                                    VARCHAR(7),
-                                    @CONTADOR % 10000000
-                                ),
-                                7
-                            )
-                        );
-
-                        SET @CORREO = CONCAT(
-                            'cliente',
-                            @CONTADOR,
-                            '@correo.com'
-                        );
-
-                        EXEC DBO.PR_CREAR_CLIENTE
-                            @CEDULA = @CEDULA,
-                            @TIPO_CLIENTE = @TIPO_CLIENTE,
-                            @NOMBRE = @NOMBRE,
-                            @RAZON_SOCIAL = @RAZON_SOCIAL,
-                            @ID_DIRECCION = @ID_DIRECCION,
-                            @TELEFONO = @TELEFONO,
-                            @CORREO = @CORREO,
-                            @PRIMER_APELLIDO = @PRIMER_APELLIDO,
-                            @SEGUNDO_APELLIDO = @SEGUNDO_APELLIDO,
-                            @NOMBRE_COMERCIAL = @NOMBRE_COMERCIAL;
-
-                        SET @ACTUAL = @ACTUAL + 1;
-                    END;
-
-                SET @CONTADOR = @CONTADOR + 1;
+                INSERT INTO DBO.CLIENTEJURIDICO (
+                    CEDULA_CLIENTE,
+                    RAZON_SOCIAL,
+                    NOMBRE_COMERCIAL
+                )
+                SELECT
+                    N.CEDULA AS CEDULA_CLIENTE,
+                    CONCAT(
+                        'Empresa Cliente ',
+                        N.NUMERO_TIPO,
+                        ' S.A.'
+                    ) AS RAZON_SOCIAL,
+                    CONCAT(
+                        'Comercial Cliente ',
+                        N.NUMERO_TIPO
+                    ) AS NOMBRE_COMERCIAL
+                FROM #NUEVOS AS N
+                WHERE N.CONTADOR % 2 <> 0;
             END;
 
         COMMIT TRANSACTION;

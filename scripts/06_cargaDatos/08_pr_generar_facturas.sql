@@ -98,32 +98,32 @@ BEGIN
             RETURN;
 
         CREATE TABLE #EMPRESAS (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             CEDULA VARCHAR(20) NOT NULL
         );
 
         CREATE TABLE #CLIENTES (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             CEDULA VARCHAR(20) NOT NULL
         );
 
         CREATE TABLE #TIPOS (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             CODIGO VARCHAR(10) NOT NULL
         );
 
         CREATE TABLE #MONEDAS (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             CODIGO CHAR(3) NOT NULL
         );
 
         CREATE TABLE #ESTADOS (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             ESTADO VARCHAR(20) NOT NULL
         );
 
         CREATE TABLE #ARTICULOS (
-            NUMERO INT NOT NULL,
+            NUMERO INT NOT NULL PRIMARY KEY,
             CODIGO VARCHAR(30) NOT NULL,
             TIPO CHAR(1) NOT NULL,
             DESCRIPCION VARCHAR(200) NOT NULL,
@@ -244,6 +244,38 @@ BEGIN
         SELECT @CANTIDAD_ARTICULOS = COUNT(*)
         FROM #ARTICULOS;
 
+        CREATE TABLE #NUMEROS (
+            NUMERO INT NOT NULL PRIMARY KEY
+        );
+
+        INSERT INTO #NUMEROS (NUMERO)
+        SELECT TOP (@TAMANO_LOTE)
+            ROW_NUMBER() OVER (
+                ORDER BY (SELECT NULL)
+            ) AS NUMERO
+        FROM SYS.ALL_OBJECTS AS A
+        CROSS JOIN SYS.ALL_OBJECTS AS B;
+
+        CREATE TABLE #NUEVAS_FACTURAS (
+            ID_FACTURA BIGINT NOT NULL PRIMARY KEY
+        );
+
+        CREATE TABLE #DETALLES_LOTE (
+            ID_FACTURA BIGINT NOT NULL,
+            NUMERO_LINEA INT NOT NULL,
+            CODIGO VARCHAR(30) NOT NULL,
+            TIPO CHAR(1) NOT NULL,
+            DESCRIPCION VARCHAR(200) NOT NULL,
+            CANTIDAD DECIMAL(18, 4) NOT NULL,
+            PRECIO_UNITARIO DECIMAL(18, 2) NOT NULL,
+            PORCENTAJE_IMPUESTO DECIMAL(5, 2) NOT NULL,
+            SUBTOTAL DECIMAL(18, 2) NOT NULL,
+            MONTO_DESCUENTO DECIMAL(18, 2) NOT NULL,
+            MONTO_IMPUESTO DECIMAL(18, 2) NOT NULL,
+            TOTAL_LINEA DECIMAL(18, 2) NOT NULL,
+            PRIMARY KEY (ID_FACTURA, NUMERO_LINEA)
+        );
+
         WHILE @ACTUAL < @TOTAL_OBJETIVO
             BEGIN
                 SET @FALTANTES = CONVERT(
@@ -257,21 +289,15 @@ BEGIN
                     ELSE @FALTANTES
                 END;
 
-                CREATE TABLE #NUEVAS_FACTURAS (
-                    ID_FACTURA BIGINT NOT NULL
-                );
+                TRUNCATE TABLE #NUEVAS_FACTURAS;
+                TRUNCATE TABLE #DETALLES_LOTE;
 
                 BEGIN TRANSACTION;
 
                 WITH NUMEROS AS (
-                    SELECT TOP (@LOTE)
-                        ROW_NUMBER() OVER (
-                            ORDER BY (
-                                SELECT NULL
-                            )
-                        ) AS NUMERO
-                    FROM SYS.ALL_OBJECTS AS A
-                    CROSS JOIN SYS.ALL_OBJECTS AS B
+                    SELECT N.NUMERO
+                    FROM #NUMEROS AS N
+                    WHERE N.NUMERO <= @LOTE
                 )
 
                 INSERT INTO DBO.FACTURA (
@@ -296,36 +322,22 @@ BEGIN
                         ID_FACTURA
                     )
                 SELECT
-                    DBO.FN_GENERAR_CLAVE_COMPROBANTE(
-                        DATEADD(
-                            SECOND,
-                            -CONVERT(
-                                INT,
-                                (
-                                    N.NUMERO
-                                    + @ACTUAL
-                                ) * 60
-                            ),
-                            @AHORA
+                    CONCAT(
+                        CONVERT(CHAR(8), FE.FECHA_EMISION, 112),
+                        REPLACE(
+                            CONVERT(CHAR(8), FE.FECHA_EMISION, 108),
+                            ':',
+                            ''
                         ),
-                        T.CODIGO
+                        '-',
+                        TRIM(T.CODIGO)
                     ) AS IDENTIFICADOR_COMPROBANTE,
                     E.CEDULA AS CEDULA_EMPRESA,
                     C.CEDULA AS CEDULA_CLIENTE,
                     T.CODIGO AS CODIGO_TIPO_DOCUMENTO,
                     M.CODIGO AS CODIGO_MONEDA,
                     EF.ESTADO AS ESTADO_FACTURA,
-                    DATEADD(
-                        SECOND,
-                        -CONVERT(
-                            INT,
-                            (
-                                N.NUMERO
-                                + @ACTUAL
-                            ) * 60
-                        ),
-                        @AHORA
-                    ) AS FECHA_EMISION,
+                    FE.FECHA_EMISION AS FECHA_EMISION,
                     0 AS SUBTOTAL,
                     0 AS TOTAL_DESCUENTOS,
                     0 AS TOTAL_IMPUESTOS,
@@ -373,7 +385,15 @@ BEGIN
                             + @ACTUAL
                             - 1
                         ) % @CANTIDAD_ESTADOS
-                    ) + 1;
+                    ) + 1
+                CROSS APPLY (
+                    SELECT
+                        DATEADD(
+                            SECOND,
+                            -CONVERT(INT, (N.NUMERO + @ACTUAL) * 60),
+                            @AHORA
+                        ) AS FECHA_EMISION
+                ) AS FE;
 
                 WITH DETALLES_BASE AS (
                     SELECT
@@ -481,6 +501,37 @@ BEGIN
                     FROM DESCUENTOS_CALCULADOS AS D
                 )
 
+                INSERT INTO #DETALLES_LOTE (
+                    ID_FACTURA,
+                    NUMERO_LINEA,
+                    CODIGO,
+                    TIPO,
+                    DESCRIPCION,
+                    CANTIDAD,
+                    PRECIO_UNITARIO,
+                    PORCENTAJE_IMPUESTO,
+                    SUBTOTAL,
+                    MONTO_DESCUENTO,
+                    MONTO_IMPUESTO,
+                    TOTAL_LINEA
+                )
+                SELECT
+                    D.ID_FACTURA,
+                    D.NUMERO_LINEA,
+                    D.CODIGO,
+                    D.TIPO,
+                    D.DESCRIPCION,
+                    D.CANTIDAD,
+                    D.PRECIO_UNITARIO,
+                    D.PORCENTAJE_IMPUESTO,
+                    D.SUBTOTAL,
+                    D.MONTO_DESCUENTO,
+                    D.MONTO_IMPUESTO,
+                    (
+                        D.SUBTOTAL - D.MONTO_DESCUENTO + D.MONTO_IMPUESTO
+                    ) AS TOTAL_LINEA
+                FROM IMPUESTOS_CALCULADOS AS D;
+
                 INSERT INTO DBO.DETALLEFACTURA (
                     ID_FACTURA,
                     NUMERO_LINEA,
@@ -503,10 +554,8 @@ BEGIN
                     D.SUBTOTAL,
                     D.MONTO_DESCUENTO,
                     D.MONTO_IMPUESTO,
-                    (
-                        D.SUBTOTAL - D.MONTO_DESCUENTO + D.MONTO_IMPUESTO
-                    ) AS TOTAL_LINEA
-                FROM IMPUESTOS_CALCULADOS AS D;
+                    D.TOTAL_LINEA
+                FROM #DETALLES_LOTE AS D;
 
                 INSERT INTO DBO.DETALLEPRODUCTO (
                     ID_FACTURA,
@@ -516,16 +565,9 @@ BEGIN
                 SELECT
                     D.ID_FACTURA,
                     D.NUMERO_LINEA,
-                    A.CODIGO
-                FROM DBO.DETALLEFACTURA AS D
-                INNER JOIN #NUEVAS_FACTURAS AS NF
-                    ON D.ID_FACTURA = NF.ID_FACTURA
-                INNER JOIN #ARTICULOS AS A
-                    ON A.NUMERO = (
-                        (D.ID_FACTURA + D.NUMERO_LINEA - 1)
-                        % @CANTIDAD_ARTICULOS
-                    ) + 1
-                WHERE A.TIPO = 'P';
+                    D.CODIGO
+                FROM #DETALLES_LOTE AS D
+                WHERE D.TIPO = 'P';
 
                 INSERT INTO DBO.DETALLESERVICIO (
                     ID_FACTURA,
@@ -535,16 +577,9 @@ BEGIN
                 SELECT
                     D.ID_FACTURA,
                     D.NUMERO_LINEA,
-                    A.CODIGO
-                FROM DBO.DETALLEFACTURA AS D
-                INNER JOIN #NUEVAS_FACTURAS AS NF
-                    ON D.ID_FACTURA = NF.ID_FACTURA
-                INNER JOIN #ARTICULOS AS A
-                    ON A.NUMERO = (
-                        (D.ID_FACTURA + D.NUMERO_LINEA - 1)
-                        % @CANTIDAD_ARTICULOS
-                    ) + 1
-                WHERE A.TIPO = 'S';
+                    D.CODIGO
+                FROM #DETALLES_LOTE AS D
+                WHERE D.TIPO = 'S';
 
                 WITH TOTALES AS (
                     SELECT
@@ -561,9 +596,7 @@ BEGIN
                         SUM(
                             D.TOTAL_LINEA
                         ) AS TOTAL
-                    FROM DBO.DETALLEFACTURA AS D
-                    INNER JOIN #NUEVAS_FACTURAS AS NF
-                        ON D.ID_FACTURA = NF.ID_FACTURA
+                    FROM #DETALLES_LOTE AS D
                     GROUP BY D.ID_FACTURA
                 )
 
@@ -581,8 +614,6 @@ BEGIN
                 COMMIT TRANSACTION;
 
                 SET @ACTUAL = @ACTUAL + @LOTE;
-
-                DROP TABLE #NUEVAS_FACTURAS;
             END;
     END TRY
     BEGIN CATCH
