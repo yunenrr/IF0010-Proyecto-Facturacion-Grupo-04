@@ -19,6 +19,67 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    IF
+        NOT EXISTS (
+            SELECT 1
+            FROM DELETED
+        )
+        BEGIN
+            INSERT INTO DBO.AUDITORIA (
+            TABLA_AFECTADA,
+            ID_REGISTRO,
+            OPERACION,
+            VALOR_ANTERIOR,
+            VALOR_NUEVO,
+            USUARIO,
+            FECHA_HORA,
+            DESCRIPCION
+            )
+            SELECT
+                'FACTURA' AS TABLA_AFECTADA,
+                CONVERT(VARCHAR(100), I.ID_FACTURA) AS ID_REGISTRO,
+                'INSERT' AS OPERACION,
+                'NO APLICA' AS VALOR_ANTERIOR,
+                CONCAT(
+                    'ID_FACTURA=',
+                    I.ID_FACTURA,
+                    '; IDENTIFICADOR_COMPROBANTE=',
+                    I.IDENTIFICADOR_COMPROBANTE,
+                    '; CEDULA_EMPRESA=',
+                    I.CEDULA_EMPRESA,
+                    '; CEDULA_CLIENTE=',
+                    I.CEDULA_CLIENTE,
+                    '; CODIGO_TIPO_DOCUMENTO=',
+                    I.CODIGO_TIPO_DOCUMENTO,
+                    '; CODIGO_MONEDA=',
+                    I.CODIGO_MONEDA,
+                    '; ESTADO_FACTURA=',
+                    I.ESTADO_FACTURA,
+                    '; FECHA_EMISION=',
+                    CONVERT(VARCHAR(19), I.FECHA_EMISION, 126),
+                    '; SUBTOTAL=',
+                    I.SUBTOTAL,
+                    '; TOTAL_DESCUENTOS=',
+                    I.TOTAL_DESCUENTOS,
+                    '; TOTAL_IMPUESTOS=',
+                    I.TOTAL_IMPUESTOS,
+                    '; TOTAL=',
+                    I.TOTAL,
+                    '; OBSERVACIONES=',
+                    I.OBSERVACIONES,
+                    '; FECHA_CREACION=',
+                    CONVERT(VARCHAR(19), I.FECHA_CREACION, 126),
+                    '; FECHA_MODIFICACION=',
+                    CONVERT(VARCHAR(19), I.FECHA_MODIFICACION, 126)
+                ) AS VALOR_NUEVO,
+                ORIGINAL_LOGIN() AS USUARIO,
+                CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+                'Historial de FACTURA' AS DESCRIPCION
+            FROM INSERTED AS I;
+
+            RETURN;
+        END;
+
     INSERT INTO DBO.AUDITORIA (
         TABLA_AFECTADA,
         ID_REGISTRO,

@@ -19,6 +19,61 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    IF
+        NOT EXISTS (
+            SELECT 1
+            FROM DELETED
+        )
+        BEGIN
+            INSERT INTO DBO.AUDITORIA (
+            TABLA_AFECTADA,
+            ID_REGISTRO,
+            OPERACION,
+            VALOR_ANTERIOR,
+            VALOR_NUEVO,
+            USUARIO,
+            FECHA_HORA,
+            DESCRIPCION
+            )
+            SELECT
+                'DETALLEFACTURA' AS TABLA_AFECTADA,
+                CONCAT(
+                    I.ID_FACTURA,
+                    '-',
+                    I.NUMERO_LINEA
+                ) AS ID_REGISTRO,
+                'INSERT' AS OPERACION,
+                'NO APLICA' AS VALOR_ANTERIOR,
+                CONCAT(
+                    'ID_FACTURA=',
+                    I.ID_FACTURA,
+                    '; NUMERO_LINEA=',
+                    I.NUMERO_LINEA,
+                    '; DESCRIPCION=',
+                    I.DESCRIPCION,
+                    '; CANTIDAD=',
+                    I.CANTIDAD,
+                    '; PRECIO_UNITARIO=',
+                    I.PRECIO_UNITARIO,
+                    '; PORCENTAJE_IMPUESTO=',
+                    I.PORCENTAJE_IMPUESTO,
+                    '; SUBTOTAL=',
+                    I.SUBTOTAL,
+                    '; MONTO_DESCUENTO=',
+                    I.MONTO_DESCUENTO,
+                    '; MONTO_IMPUESTO=',
+                    I.MONTO_IMPUESTO,
+                    '; TOTAL_LINEA=',
+                    I.TOTAL_LINEA
+                ) AS VALOR_NUEVO,
+                ORIGINAL_LOGIN() AS USUARIO,
+                CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+                'Historial de DETALLEFACTURA' AS DESCRIPCION
+            FROM INSERTED AS I;
+
+            RETURN;
+        END;
+
     INSERT INTO DBO.AUDITORIA (
         TABLA_AFECTADA,
         ID_REGISTRO,
