@@ -1,0 +1,80 @@
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
+GO
+
+IF EXISTS (
+    SELECT 1
+    FROM SYS.TRIGGERS
+    WHERE NAME = 'TR_AUD_CLIENTEJURIDICO'
+)
+    BEGIN
+        DROP TRIGGER DBO.TR_AUD_CLIENTEJURIDICO;
+    END
+GO
+
+CREATE TRIGGER DBO.TR_AUD_CLIENTEJURIDICO
+ON DBO.CLIENTEJURIDICO
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM INSERTED AS I
+        INNER JOIN DBO.CLIENTE AS C WITH (UPDLOCK, HOLDLOCK)
+            ON I.CEDULA_CLIENTE = C.CEDULA
+        INNER JOIN DBO.CLIENTEFISICO AS O
+            ON I.CEDULA_CLIENTE = O.CEDULA_CLIENTE
+    )
+        THROW 53102,
+            'Una cedula no puede ser fisica y juridica a la vez.',
+            1;
+
+    INSERT INTO DBO.AUDITORIA (
+        TABLA_AFECTADA,
+        ID_REGISTRO,
+        OPERACION,
+        VALOR_ANTERIOR,
+        VALOR_NUEVO,
+        USUARIO,
+        FECHA_HORA,
+        DESCRIPCION
+    )
+    SELECT
+        'CLIENTEJURIDICO',
+        CONVERT(VARCHAR(100), COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)),
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'INSERT'
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'DELETE'
+            ELSE 'UPDATE'
+        END,
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                D.CEDULA_CLIENTE,
+                '; RAZON_SOCIAL=',
+                D.RAZON_SOCIAL,
+                '; NOMBRE_COMERCIAL=',
+                D.NOMBRE_COMERCIAL
+            )
+        END,
+        CASE
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                I.CEDULA_CLIENTE,
+                '; RAZON_SOCIAL=',
+                I.RAZON_SOCIAL,
+                '; NOMBRE_COMERCIAL=',
+                I.NOMBRE_COMERCIAL
+            )
+        END,
+        ORIGINAL_LOGIN(),
+        CONVERT(DATETIME2(0), SYSDATETIME()),
+        'Historial de CLIENTEJURIDICO'
+    FROM INSERTED AS I
+    FULL OUTER JOIN DELETED AS D
+        ON I.CEDULA_CLIENTE = D.CEDULA_CLIENTE;
+END;
+GO
