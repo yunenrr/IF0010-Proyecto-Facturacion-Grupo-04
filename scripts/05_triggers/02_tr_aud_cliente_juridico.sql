@@ -1,0 +1,83 @@
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
+GO
+
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.TRIGGERS
+        WHERE NAME = 'TR_AUD_CLIENTEJURIDICO'
+    )
+    BEGIN
+        DROP TRIGGER DBO.TR_AUD_CLIENTEJURIDICO;
+    END
+GO
+
+CREATE TRIGGER DBO.TR_AUD_CLIENTEJURIDICO
+ON DBO.CLIENTEJURIDICO
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF
+        EXISTS (
+            SELECT 1
+            FROM INSERTED AS I
+            INNER JOIN DBO.CLIENTE AS C WITH (UPDLOCK, HOLDLOCK)
+                ON I.CEDULA_CLIENTE = C.CEDULA
+            INNER JOIN DBO.CLIENTEFISICO AS O
+                ON I.CEDULA_CLIENTE = O.CEDULA_CLIENTE
+        )
+        THROW 53102, 'Una cedula ya es cliente fisico.', 1;
+
+    INSERT INTO DBO.AUDITORIA (
+        TABLA_AFECTADA,
+        ID_REGISTRO,
+        OPERACION,
+        VALOR_ANTERIOR,
+        VALOR_NUEVO,
+        USUARIO,
+        FECHA_HORA,
+        DESCRIPCION
+    )
+    SELECT
+        'CLIENTEJURIDICO' AS TABLA_AFECTADA,
+        CONVERT(
+            VARCHAR(100),
+            COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)
+        ) AS ID_REGISTRO,
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'INSERT'
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'DELETE'
+            ELSE 'UPDATE'
+        END AS OPERACION,
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                D.CEDULA_CLIENTE,
+                '; RAZON_SOCIAL=',
+                D.RAZON_SOCIAL,
+                '; NOMBRE_COMERCIAL=',
+                D.NOMBRE_COMERCIAL
+            )
+        END AS VALOR_ANTERIOR,
+        CASE
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                I.CEDULA_CLIENTE,
+                '; RAZON_SOCIAL=',
+                I.RAZON_SOCIAL,
+                '; NOMBRE_COMERCIAL=',
+                I.NOMBRE_COMERCIAL
+            )
+        END AS VALOR_NUEVO,
+        ORIGINAL_LOGIN() AS USUARIO,
+        CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+        'Historial de CLIENTEJURIDICO' AS DESCRIPCION
+    FROM INSERTED AS I
+    FULL OUTER JOIN DELETED AS D
+        ON I.CEDULA_CLIENTE = D.CEDULA_CLIENTE;
+END;
+GO

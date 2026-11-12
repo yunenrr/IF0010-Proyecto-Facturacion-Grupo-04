@@ -30,7 +30,8 @@ BEGIN
             MONTH,
             -6,
             SYSDATETIME()
-        );
+        )
+        AND F.FECHA_EMISION <= SYSDATETIME();
 
     RETURN CASE
         WHEN @CANTIDAD_COMPRAS > 5 THEN N'Sí'

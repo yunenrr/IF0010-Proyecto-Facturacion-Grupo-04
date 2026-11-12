@@ -1,0 +1,87 @@
+USE FACTURACIONSOLUCIONESMAGNIFICAS;
+GO
+
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.TRIGGERS
+        WHERE NAME = 'TR_AUD_CLIENTEFISICO'
+    )
+    BEGIN
+        DROP TRIGGER DBO.TR_AUD_CLIENTEFISICO;
+    END
+GO
+
+CREATE TRIGGER DBO.TR_AUD_CLIENTEFISICO
+ON DBO.CLIENTEFISICO
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF
+        EXISTS (
+            SELECT 1
+            FROM INSERTED AS I
+            INNER JOIN DBO.CLIENTE AS C WITH (UPDLOCK, HOLDLOCK)
+                ON I.CEDULA_CLIENTE = C.CEDULA
+            INNER JOIN DBO.CLIENTEJURIDICO AS O
+                ON I.CEDULA_CLIENTE = O.CEDULA_CLIENTE
+        )
+        THROW 53101, 'Una cedula no puede ser fisica y juridica a la vez.', 1;
+
+    INSERT INTO DBO.AUDITORIA (
+        TABLA_AFECTADA,
+        ID_REGISTRO,
+        OPERACION,
+        VALOR_ANTERIOR,
+        VALOR_NUEVO,
+        USUARIO,
+        FECHA_HORA,
+        DESCRIPCION
+    )
+    SELECT
+        'CLIENTEFISICO' AS TABLA_AFECTADA,
+        CONVERT(
+            VARCHAR(100),
+            COALESCE(I.CEDULA_CLIENTE, D.CEDULA_CLIENTE)
+        ) AS ID_REGISTRO,
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'INSERT'
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'DELETE'
+            ELSE 'UPDATE'
+        END AS OPERACION,
+        CASE
+            WHEN D.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                D.CEDULA_CLIENTE,
+                '; NOMBRE=',
+                D.NOMBRE,
+                '; PRIMER_APELLIDO=',
+                D.PRIMER_APELLIDO,
+                '; SEGUNDO_APELLIDO=',
+                D.SEGUNDO_APELLIDO
+            )
+        END AS VALOR_ANTERIOR,
+        CASE
+            WHEN I.CEDULA_CLIENTE IS NULL THEN 'NO APLICA'
+            ELSE CONCAT(
+                'CEDULA_CLIENTE=',
+                I.CEDULA_CLIENTE,
+                '; NOMBRE=',
+                I.NOMBRE,
+                '; PRIMER_APELLIDO=',
+                I.PRIMER_APELLIDO,
+                '; SEGUNDO_APELLIDO=',
+                I.SEGUNDO_APELLIDO
+            )
+        END AS VALOR_NUEVO,
+        ORIGINAL_LOGIN() AS USUARIO,
+        CONVERT(DATETIME2(0), SYSDATETIME()) AS FECHA_HORA,
+        'Historial de CLIENTEFISICO' AS DESCRIPCION
+    FROM INSERTED AS I
+    FULL OUTER JOIN DELETED AS D
+        ON I.CEDULA_CLIENTE = D.CEDULA_CLIENTE;
+END;
+GO
