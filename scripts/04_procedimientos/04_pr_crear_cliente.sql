@@ -50,6 +50,22 @@ BEGIN
             THROW 51102, 'El tipo de cliente no es valido.', 1;
 
         IF
+            @TIPO_CLIENTE = 'FISICA'
+            AND @CEDULA COLLATE LATIN1_GENERAL_100_BIN2 NOT LIKE
+                '[1-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+            AND @CEDULA COLLATE LATIN1_GENERAL_100_BIN2 NOT LIKE
+                '[1-9]-[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'
+            THROW 51113, 'La cedula fisica debe tener 9 digitos y puede usar el formato 1-1234-5678.', 1;
+
+        IF
+            @TIPO_CLIENTE = 'JURIDICA'
+            AND UPPER(@CEDULA) COLLATE LATIN1_GENERAL_100_BIN2 NOT LIKE
+                '[0-9][0-9][0-9][0-9][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z]'
+            AND UPPER(@CEDULA) COLLATE LATIN1_GENERAL_100_BIN2 NOT LIKE
+                '[0-9]-[0-9][0-9][0-9]-[0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z][0-9A-Z]'
+            THROW 51114, 'La cedula juridica debe tener 4 digitos y 6 caracteres alfanumericos, con guiones opcionales.', 1;
+
+        IF
             NOT EXISTS (
                 SELECT 1
                 FROM DBO.DIRECCION
