@@ -19,6 +19,11 @@ La base de datos utiliza procedimientos almacenados, funciones, vistas, índices
 | Joseph Rojas Ureña | C4J391 |
 | Maikel Jesús Romero Solano | C4J450 |
 
+## Profesores
+
+- Luis Gonzalo Valverde Carballo
+- Yunen Ramos Ramírez
+
 ## Requisitos de software
 
 - Microsoft SQL Server 2019 o superior.
